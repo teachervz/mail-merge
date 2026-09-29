@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>مستند1 - Word | محاكي وورد</title>
+<style>
+/* =========================================================
+   محاكي مايكروسوفت وورد (دمج المراسلات) — مسرح ثابت 1600×900 يُكبَّر ليملأ الشاشة
+   ========================================================= */
+:root{--blue:#185ABD;--blue2:#2B579A;--bar:#F3F2F1;--line:#E1DFDD;--txt:#252423;--muted:#605E5C;--hov:#E1DFDD;--sel:#C8C6C4;--fld:#D9D9D9}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#1f1f1f;font-family:'Segoe UI','Tahoma','Arial',sans-serif;color:var(--txt);font-size:13px}
+button{font-family:inherit;font-size:inherit;color:inherit;background:none;border:none;cursor:default}
+input,select{font-family:inherit;font-size:13px}
+#app{position:absolute;left:50%;top:50%;width:1600px;height:900px;transform-origin:center;background:#fff;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+
+/* شريط العنوان */
+.titlebar{height:40px;background:var(--blue);color:#fff;display:flex;align-items:center;padding:0 10px;gap:10px;flex:none}
+.titlebar .qa{display:flex;gap:4px;align-items:center}
+.titlebar .qa button{width:30px;height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.titlebar .qa button:hover{background:rgba(255,255,255,.15)}
+.titlebar .ttl{font-size:13px;margin:0 10px}
+.titlebar .search{flex:1;display:flex;justify-content:center}
+.titlebar .search div{width:420px;height:28px;background:rgba(255,255,255,.85);border-radius:4px;color:#555;display:flex;align-items:center;padding:0 10px;gap:8px;font-size:13px}
+.titlebar .user{display:flex;align-items:center;gap:8px;font-size:12px}
+.titlebar .user span.av{width:28px;height:28px;border-radius:50%;background:#fff;color:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:700}
+.titlebar .win{display:flex;direction:ltr}
+.titlebar .win button{width:46px;height:40px;font-size:14px}
+.titlebar .win button:hover{background:rgba(255,255,255,.15)}
+.titlebar .win button.cl:hover{background:#C42B1C}
+
+/* التبويبات والشريط */
+.tabs{height:34px;background:var(--bar);display:flex;align-items:flex-end;padding:0 6px;gap:2px;flex:none}
+.tabs button{height:32px;padding:0 12px;font-size:13px;position:relative;border-radius:4px 4px 0 0}
+.tabs button:hover{background:var(--hov)}
+.tabs button.on{color:var(--blue);font-weight:600}
+.tabs button.on::after{content:'';position:absolute;bottom:2px;right:10px;left:10px;height:3px;background:var(--blue);border-radius:2px}
+.tabs button.file{background:var(--blue);color:#fff;margin-left:4px}
+.tabs .rt{margin-right:auto;display:flex;gap:6px;align-items:center;padding-bottom:4px}
+.tabs .rt span{border:1px solid var(--line);background:#fff;border-radius:4px;padding:3px 10px;font-size:12px}
+.ribbon{height:104px;background:var(--bar);border-bottom:1px solid var(--line);display:flex;padding:4px 6px 0;flex:none;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.grp{display:flex;flex-direction:column;padding:0 6px;border-left:1px solid var(--line);position:relative}
+.grp:last-child{border-left:none}
+.grp .it{flex:1;display:flex;gap:2px;align-items:flex-start}
+.grp .gn{height:20px;font-size:11.5px;color:var(--muted);text-align:center;white-space:nowrap}
+.big{width:64px;min-height:76px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;border-radius:4px;text-align:center;font-size:12px;line-height:1.25}
+.big svg{width:32px;height:32px;flex:none}
+.big:hover:not(.dis){background:var(--hov)}
+.big.on{background:var(--sel)}
+.col3{display:flex;flex-direction:column;gap:1px}
+.sm{height:24px;display:flex;align-items:center;gap:5px;padding:0 6px;border-radius:4px;font-size:12px;white-space:nowrap}
+.sm svg{width:16px;height:16px;flex:none}
+.sm:hover:not(.dis){background:var(--hov)}
+.sm.on{background:var(--sel)}
+.dis{opacity:.4;pointer-events:none}
+.dd::after{content:' ▾';font-size:9px}
+.nav{display:flex;align-items:center;gap:2px}
+.nav button{width:24px;height:24px;border-radius:4px;font-size:12px}
+.nav button:hover{background:var(--hov)}
+.nav input{width:44px;height:22px;text-align:center;border:1px solid #8A8886;border-radius:2px}
+/* أدوات الشريط الرئيسي */
+.fbox{display:flex;gap:4px;align-items:center;margin-bottom:4px}
+.fbox select{height:24px;border:1px solid #8A8886;border-radius:2px;background:#fff}
+.tb{width:26px;height:24px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+.tb:hover{background:var(--hov)}
+.tb.on{background:var(--sel)}
+
+/* منطقة العمل */
+.work{flex:1;display:flex;min-height:0;background:#E6E6E6}
+.canvas{flex:1;overflow:auto;position:relative;display:flex;flex-direction:column;align-items:center;padding:0 0 40px}
+.ruler{position:sticky;top:0;z-index:2;height:22px;width:100%;display:flex;justify-content:center;background:#E6E6E6;flex:none}
+.ruler div{width:816px;height:18px;margin-top:2px;background:#fff;border:1px solid #C8C6C4;background-image:repeating-linear-gradient(90deg,#999 0 1px,transparent 1px 37.8px);background-size:37.8px 5px;background-repeat:repeat-x;background-position:0 12px;zoom:var(--z)}
+.pagewrap{zoom:var(--z);margin-top:16px}
+.page{width:816px;min-height:1056px;background:#fff;box-shadow:0 0 0 1px #D2D0CE,0 2px 8px rgba(0,0,0,.15);padding:96px 96px;font-family:'Calibri','Arial',sans-serif;font-size:14.67px;line-height:1.6;color:#000;outline:none;user-select:text;cursor:text}
+.page p{margin:0 0 10px;min-height:1em}
+.page .pic{display:block;margin:10px auto;width:360px;height:220px;border:6px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.35);background:linear-gradient(#b9d8f3,#e9f3fb 55%,#d8c29a 55%,#c9ad7c);position:relative;overflow:hidden}
+.page .pic span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:120px}
+.mf{background:transparent;border-radius:2px;white-space:nowrap;cursor:default}
+.mf.sel,.hl .mf{background:var(--fld)}
+.preview .mf{background:transparent}
+.hl.preview .mf{background:var(--fld)}
+.page table{border-collapse:collapse;width:100%;margin:8px 0}
+.page td{border:1px solid #000;padding:4px 6px;min-width:40px;height:24px}
+
+/* لوحة المهام (على الجانب الأيسر) */
+.pane{width:300px;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;flex:none;order:2}
+.pane .ph{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:15px;border-bottom:1px solid var(--line)}
+.pane .ph button{width:26px;height:26px;border-radius:4px}
+.pane .ph button:hover{background:var(--hov)}
+.pane .pb{flex:1;overflow:auto;padding:12px 16px;font-size:13px;line-height:1.55}
+.pane h4{font-size:14px;font-weight:600;margin:6px 0 6px}
+.pane .rad{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:default}
+.pane .rad i{width:15px;height:15px;border-radius:50%;border:1px solid #333;position:relative;flex:none}
+.pane .rad.on i::after{content:'';position:absolute;inset:3px;border-radius:50%;background:#333}
+.pane hr{border:none;border-top:1px solid var(--line);margin:10px 0}
+.pane .lnk{color:var(--blue);text-decoration:underline;cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:2px 0}
+.pane .lnk:hover{color:#0F3C8A}
+.pane .lnk.dis{color:#999;text-decoration:none}
+.pane .pf{border-top:1px solid var(--line);padding:10px 16px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.pane .pf .st{color:var(--muted)}
+.pane .rec{display:flex;align-items:center;justify-content:center;gap:10px;margin:8px 0}
+.pane .rec button{width:28px;height:26px;border:1px solid #8A8886;border-radius:3px;background:#fff}
+.pane .rec button:hover{background:var(--hov)}
+
+/* شريط الحالة */
+.status{height:26px;background:var(--bar);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 10px;gap:16px;font-size:12px;color:#333;flex:none}
+.status .sp{flex:1}
+.status .zm{display:flex;align-items:center;gap:6px;direction:ltr}
+.status input[type=range]{width:110px}
+.status button:hover{background:var(--hov)}
+.coachbtn{background:#FFF4CE!important;border:1px solid #F2C661!important;border-radius:4px;padding:1px 10px;font-weight:600}
+
+/* القوائم المنسدلة */
+.menu{position:absolute;background:#fff;border:1px solid #C8C6C4;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:4px 0;z-index:50;min-width:250px;border-radius:4px}
+.menu button{display:flex;align-items:center;gap:10px;width:100%;padding:7px 14px;text-align:right;font-size:13px}
+.menu button:hover:not(.dis){background:#EDEBE9}
+.menu button svg{width:18px;height:18px}
+.menu hr{border:none;border-top:1px solid var(--line);margin:4px 0}
+
+/* مربعات الحوار */
+.mask{position:absolute;inset:0;background:rgba(0,0,0,.08);z-index:60;display:flex;align-items:center;justify-content:center}
+.dlg{background:#fff;border:1px solid #8A8886;box-shadow:0 12px 36px rgba(0,0,0,.28);display:flex;flex-direction:column;font-size:13px;max-height:820px}
+.dlg .dh{height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 0;padding-right:12px}
+.dlg .dh .x{width:44px;height:32px;font-size:14px;direction:ltr}
+.dlg .dh .x:hover{background:#C42B1C;color:#fff}
+.dlg .db{padding:10px 16px;overflow:auto}
+.dlg .df{display:flex;gap:8px;justify-content:flex-end;padding:10px 16px 14px}
+.dlg .df.rtl{direction:rtl}
+.btn{min-width:84px;height:28px;padding:0 12px;border:1px solid #8A8886;border-radius:3px;background:#fff;font-size:13px}
+.btn:hover:not(:disabled){background:#F3F2F1}
+.btn.pr{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.pr:hover:not(:disabled){background:#1450A8}
+.btn:disabled{opacity:.45}
+.dlg .row{display:flex;gap:10px;align-items:center}
+.dlg label{display:flex;align-items:center;gap:6px}
+.dlg input[type=text]{height:26px;border:1px solid #8A8886;border-radius:2px;padding:0 6px}
+.dlg select{height:26px;border:1px solid #8A8886;border-radius:2px}
+.grid{border:1px solid #8A8886;overflow:auto;background:#fff}
+.grid table{border-collapse:collapse;min-width:100%;font-size:13px}
+.grid th{background:#F3F2F1;border:1px solid #D2D0CE;padding:4px 8px;font-weight:400;white-space:nowrap;position:sticky;top:0}
+.grid td{border:1px solid #E1DFDD;padding:0;white-space:nowrap}
+.grid td input{border:none;height:26px;padding:0 6px;width:130px;outline:none;background:transparent}
+.grid td input:focus{background:#FFF4CE}
+.grid tr.cur td{background:#DEECF9}
+.grid td.ro{padding:4px 8px}
+.lst{border:1px solid #8A8886;overflow:auto;background:#fff}
+.lst div{padding:4px 8px}
+.lst div.on{background:var(--blue);color:#fff}
+.fs{border:1px solid #D2D0CE;padding:10px;margin-top:10px;position:relative}
+.fs .lg{position:absolute;top:-9px;right:8px;background:#fff;padding:0 4px}
+.side{display:flex;flex-direction:column;gap:6px;width:120px}
+.msgicon{font-size:30px}
+.explorer{display:flex;height:300px;border:1px solid #D2D0CE}
+.explorer .tree{width:190px;border-left:1px solid #D2D0CE;padding:6px;overflow:auto}
+.explorer .tree div{padding:4px 6px;border-radius:3px}
+.explorer .tree div.on{background:#CCE4F7}
+.explorer .files{flex:1;padding:6px;overflow:auto}
+.explorer .files div{padding:5px 8px;border-radius:3px;display:flex;gap:8px;align-items:center}
+.explorer .files div:hover{background:#E5F3FF}
+.explorer .files div.on{background:#CCE8FF}
+.pvbox{border:1px solid #D2D0CE;padding:12px;min-height:70px;background:#fff;line-height:1.6}
+
+/* النافذة الناتجة عن الدمج */
+#merged{position:absolute;inset:0;z-index:40;background:#fff;display:none;flex-direction:column}
+#merged.show{display:flex}
+#merged .mcanvas{flex:1;overflow:auto;background:#E6E6E6;display:flex;flex-direction:column;align-items:center;gap:20px;padding:20px 0 60px}
+#merged .page{min-height:auto}
+.pgsep{font-size:11px;color:#666;text-align:center;border-top:1px dotted #999;margin:14px 0}
+
+/* الشاشة الخلفية (ملف) */
+#backstage{position:absolute;inset:0;z-index:45;background:#fff;display:none}
+#backstage.show{display:flex}
+#backstage .bl{width:240px;background:var(--blue);color:#fff;display:flex;flex-direction:column;padding:14px 0}
+#backstage .bl button{text-align:right;padding:12px 26px;font-size:14px}
+#backstage .bl button:hover{background:rgba(255,255,255,.15)}
+#backstage .br{flex:1;padding:40px 50px}
+#backstage h1{font-weight:300;font-size:36px;margin-bottom:24px}
+.tiles{display:flex;gap:20px}
+.tile{width:180px;text-align:center;cursor:pointer}
+.tile div{height:230px;border:1px solid #D2D0CE;margin-bottom:8px;display:flex;align-items:center;justify-content:center;font-size:60px;background:#fff}
+.tile:hover div{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+
+/* مساعد المعلمة (خطوات الدرس) */
+#coach{position:absolute;left:14px;bottom:34px;width:330px;background:#fff;border:1px solid #C8C6C4;box-shadow:0 8px 24px rgba(0,0,0,.2);border-radius:8px;z-index:30;display:none;font-size:13px}
+#coach.show{display:block}
+#coach .ch{background:#FFF4CE;padding:8px 12px;font-weight:700;display:flex;justify-content:space-between;border-radius:8px 8px 0 0}
+#coach ol{list-style:none;padding:8px 12px;display:flex;flex-direction:column;gap:5px}
+#coach li{display:flex;gap:8px;align-items:flex-start;color:#444}
+#coach li i{width:18px;height:18px;border:1.5px solid #999;border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:12px;color:#fff;margin-top:1px}
+#coach li.ok{color:#107C10}
+#coach li.ok i{background:#107C10;border-color:#107C10}
+.toast{position:absolute;left:50%;bottom:50px;transform:translateX(-50%);background:#323130;color:#fff;padding:10px 18px;border-radius:6px;z-index:90;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+
+/* =========================================================
+   وضع اللمس (آيباد): واجهة أكبر وأزرار أسهل للإصبع
+   ========================================================= */
+html,body{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+body.touch #app{width:1280px;height:860px}
+body.touch{font-size:15px}
+body.touch .big{width:72px;font-size:13px}
+body.touch .big svg{width:34px;height:34px}
+body.touch .sm{height:28px;font-size:13.5px}
+body.touch .ribbon{height:112px}
+body.touch .tabs button{font-size:14.5px;padding:0 13px}
+body.touch .menu button{padding:11px 16px;font-size:15px}
+body.touch .pane{width:290px}
+body.touch .pane .pb,body.touch .pane .pf{font-size:15px}
+body.touch .pane .rad{padding:7px 0}
+body.touch .pane .lnk{padding:5px 0}
+body.touch .btn{height:36px;min-width:96px;font-size:15px}
+body.touch .dlg{font-size:15px}
+body.touch .dlg input[type=text],body.touch .dlg select{height:34px;font-size:15px}
+body.touch .grid td input{height:34px;font-size:15px;width:120px}
+body.touch .lst div{padding:8px 10px}
+body.touch .titlebar .search div{width:260px}
+body.touch .ruler{display:none}
+#rotate{display:none;position:fixed;inset:0;background:#185ABD;color:#fff;z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px;font:600 24px 'Segoe UI',Tahoma,sans-serif;text-align:center}
+@media (orientation:portrait){ body.touch #rotate{display:flex} }
+
+/* =========================================================
+   وضع التحدي
+   ========================================================= */
+.chal{display:none;align-items:center;gap:8px;background:#fff;color:#185ABD;border-radius:6px;padding:3px 10px;font-weight:700;font-size:13px}
+.chal.show{display:flex}
+.chal .t{font-variant-numeric:tabular-nums;direction:ltr;min-width:48px;text-align:center}
+.chal.low{background:#FDE7E9;color:#C42B1C}
+.chal button{background:#185ABD;color:#fff;border-radius:4px;padding:2px 10px;font-size:12px}
+.cscr{position:absolute;inset:0;z-index:80;background:linear-gradient(135deg,#185ABD,#6D28D9);display:none;align-items:center;justify-content:center}
+.cscr.show{display:flex}
+.ccard{background:#fff;border-radius:18px;box-shadow:0 30px 70px rgba(0,0,0,.35);width:820px;max-height:820px;overflow:auto;padding:30px 36px;font-size:16px;line-height:1.6}
+.ccard h1{font-size:34px;color:#185ABD;margin-bottom:6px}
+.ccard .task{background:#F3F2F1;border-radius:12px;padding:14px 18px;margin:14px 0}
+.ccard .row{display:flex;gap:14px;align-items:center;margin:10px 0}
+.ccard input,.ccard select{height:40px;font-size:17px;border:2px solid #C8C6C4;border-radius:8px;padding:0 10px}
+.ccard .go{background:#107C10;color:#fff;font-size:20px;font-weight:700;border-radius:10px;padding:12px 30px;cursor:pointer}
+.ccard .go:hover{background:#0B5A0B}
+.ccard .ghost{background:#F3F2F1;color:#333;font-size:16px;border-radius:10px;padding:10px 20px;cursor:pointer}
+.score{display:flex;gap:16px;margin:16px 0}
+.score div{flex:1;background:#F3F2F1;border-radius:12px;padding:12px;text-align:center}
+.score b{display:block;font-size:34px;color:#185ABD}
+.clist{columns:2;font-size:14.5px;margin:10px 0}
+.clist div{break-inside:avoid;padding:2px 0}
+.hist{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+.hist th,.hist td{border:1px solid #E1DFDD;padding:5px 8px;text-align:center}
+.hist th{background:#F3F2F1}
+.conf2{position:absolute;width:12px;height:18px;z-index:90;pointer-events:none}
+
+#printArea{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block!important}
+  #printArea .page{box-shadow:none;page-break-after:always;min-height:auto;width:auto}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- شريط العنوان -->
+  <div class="titlebar">
+    <div class="qa"><button title="حفظ" data-cmd="save">💾</button><button title="تراجع" data-cmd="undo">↶</button><button title="إعادة" data-cmd="redo">↷</button></div>
+    <div class="ttl" id="docTitle">مستند1 - Word</div>
+    <div class="chal" id="chal">🏆 <span id="chName"></span> • <span id="chSteps">٠/١١</span> • ⏱ <span class="t" id="chTime">10:00</span><button onclick="finishChallenge('manual')">إنهاء</button></div>
+    <div class="search"><div>🔍 <span>بحث</span></div></div>
+    <div class="user"><span>رحاب الحربي</span><span class="av">ر ح</span></div>
+    <div class="win"><button>─</button><button>☐</button><button class="cl" onclick="toast('هذا محاكي تعليمي 🙂')">✕</button></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="ribbon" id="ribbon"></div>
+  <div class="work">
+    <div class="pane" id="pane" style="display:none"></div>
+    <div class="canvas" id="canvas">
+      <div class="ruler"><div></div></div>
+      <div class="pagewrap"><div class="page" id="page" contenteditable="true" spellcheck="false"></div></div>
+    </div>
+  </div>
+  <div class="status">
+    <span id="stPage">الصفحة 1 من 1</span><span id="stWords">0 كلمة</span><span>العربية (المملكة العربية السعودية)</span>
+    <button class="coachbtn" id="coachBtn" onclick="document.getElementById('coach').classList.toggle('show')">🎯 خطوات الدرس</button>
+    <button class="coachbtn" id="chalBtn" onclick="openChallenge()" style="background:#DFF6DD!important;border-color:#9AD29A!important">🏆 وضع التحدي</button>
+    <span class="sp"></span><span>📖 ▭ 🌐</span>
+    <div class="zm"><button onclick="setZoom(zoom-10)">−</button><input type="range" id="zr" min="50" max="200" value="120"><button onclick="setZoom(zoom+10)">+</button><span id="zv">120%</span></div>
+  </div>
+
+  <!-- مساعد خطوات الدرس -->
+  <div id="coach"><div class="ch"><span>🎯 خطوات دمج المراسلات (كتاب الطالبة ص ٦٨–٧٥)</span><button onclick="this.closest('#coach').classList.remove('show')">✕</button></div><ol id="coachList"></ol></div>
+
+  <!-- نافذة المستند المدموج -->
+  <div id="merged"></div>
+  <!-- ملف (Backstage) -->
+  <div id="backstage"></div>
+  <div class="toast" id="toast"></div>
+  <!-- شاشة التحدي (البداية والنتيجة) -->
+  <div class="cscr" id="cscr"><div class="ccard" id="ccard"></div></div>
+</div>
+<div id="rotate"><div style="font-size:70px">🔄</div>أديري الآيباد بالعرض<br><span style="font-size:17px;font-weight:400">المحاكي يعمل على الوضع الأفقي</span></div>
+<div id="printArea"></div>
+
+<script>
+/* ==================================================================
+   أدوات عامة
+   ================================================================== */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const app=$('#app'), page=$('#page');
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* الأجهزة اللمسية (آيباد) تستخدم واجهة أكبر 1280×860 */
+const TOUCH = matchMedia('(pointer:coarse)').matches || (navigator.maxTouchPoints>1 && Math.min(screen.width,screen.height)<1100);
+if(TOUCH) document.body.classList.add('touch');
+const AW=TOUCH?1280:1600, AH=TOUCH?860:900;
+function fit(){
+  const a=document.activeElement;   // تجاهل تغيّر الحجم عند ظهور لوحة المفاتيح في الآيباد
+  if(TOUCH && a && (a.tagName==='INPUT'||a.isContentEditable) && fit.done) return;
+  const s=Math.min(innerWidth/AW,innerHeight/AH); app.style.transform=`translate(-50%,-50%) scale(${s})`; fit.done=true; }
+addEventListener('resize',fit); addEventListener('orientationchange',()=>setTimeout(()=>{ fit.done=false; fit(); },300)); fit();
+let toastT; function toast(t){ const e=$('#toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>e.classList.remove('show'),2600); }
+let zoom=120; function setZoom(z){ zoom=Math.max(50,Math.min(200,z)); document.documentElement.style.setProperty('--z',zoom/100); $('#zr').value=zoom; $('#zv').textContent=zoom+'%'; }
+$('#zr').oninput=e=>setZoom(+e.target.value); setZoom(TOUCH?100:120);
+const LS={ get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} } };
+
+/* ==================================================================
+   أيقونات بسيطة بأسلوب وورد (SVG)
+   ================================================================== */
+const I={
+  env:'<svg viewBox="0 0 32 32"><rect x="3" y="8" width="26" height="17" rx="1" fill="#fff" stroke="#444"/><path d="M3 9l13 9 13-9" fill="none" stroke="#444"/><rect x="21" y="11" width="5" height="4" fill="#185ABD"/></svg>',
+  lbl:'<svg viewBox="0 0 32 32"><rect x="5" y="4" width="22" height="24" fill="#fff" stroke="#444"/><rect x="8" y="7" width="7" height="5" fill="#9CC3F5" stroke="#185ABD"/><rect x="17" y="7" width="7" height="5" fill="#9CC3F5" stroke="#185ABD"/><rect x="8" y="15" width="7" height="5" fill="#9CC3F5" stroke="#185ABD"/><rect x="17" y="15" width="7" height="5" fill="#9CC3F5" stroke="#185ABD"/></svg>',
+  start:'<svg viewBox="0 0 32 32"><path d="M7 3h13l6 6v20H7z" fill="#fff" stroke="#444"/><path d="M20 3v6h6" fill="none" stroke="#444"/><rect x="11" y="15" width="14" height="10" fill="#fff" stroke="#185ABD"/><path d="M11 16l7 5 7-5" fill="none" stroke="#185ABD"/></svg>',
+  rec:'<svg viewBox="0 0 32 32"><circle cx="12" cy="11" r="5" fill="#9CC3F5" stroke="#185ABD"/><path d="M3 27c0-6 4-9 9-9s9 3 9 9z" fill="#9CC3F5" stroke="#185ABD"/><circle cx="22" cy="10" r="4" fill="#fff" stroke="#444"/><path d="M17 20c1-3 3-4 5-4 4 0 7 3 7 8h-7" fill="#fff" stroke="#444"/></svg>',
+  edit:'<svg viewBox="0 0 32 32"><rect x="4" y="5" width="20" height="22" fill="#fff" stroke="#444"/><path d="M8 11h12M8 15h12M8 19h8" stroke="#185ABD"/><path d="M19 26l2-6 8-8 3 3-8 8z" fill="#F2C661" stroke="#444"/></svg>',
+  hlf:'<svg viewBox="0 0 32 32"><rect x="3" y="9" width="26" height="14" fill="#D9D9D9" stroke="#666"/><text x="16" y="20" font-size="11" text-anchor="middle" fill="#222">«»</text></svg>',
+  addr:'<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" fill="#fff" stroke="#444"/><rect x="8" y="10" width="14" height="10" fill="#D9D9D9"/><path d="M10 13h10M10 16h8" stroke="#185ABD"/></svg>',
+  greet:'<svg viewBox="0 0 32 32"><rect x="4" y="5" width="24" height="22" fill="#fff" stroke="#444"/><rect x="8" y="8" width="14" height="5" fill="#D9D9D9"/><path d="M8 17h16M8 21h12" stroke="#999"/></svg>',
+  field:'<svg viewBox="0 0 32 32"><rect x="3" y="8" width="26" height="16" rx="2" fill="#fff" stroke="#444"/><text x="16" y="20" font-size="11" text-anchor="middle" fill="#185ABD">«ab»</text></svg>',
+  rule:'<svg viewBox="0 0 16 16"><path d="M2 3h12M2 8h8M2 13h12" stroke="#185ABD" stroke-width="1.5"/><circle cx="13" cy="8" r="2" fill="#F2C661"/></svg>',
+  match:'<svg viewBox="0 0 16 16"><rect x="1" y="2" width="6" height="12" fill="#fff" stroke="#444"/><rect x="9" y="2" width="6" height="12" fill="#fff" stroke="#444"/><path d="M7 5h2M7 8h2M7 11h2" stroke="#185ABD"/></svg>',
+  upd:'<svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-2-4" fill="none" stroke="#185ABD" stroke-width="1.6"/><path d="M11 1v4h4" fill="none" stroke="#185ABD" stroke-width="1.6"/></svg>',
+  prev:'<svg viewBox="0 0 32 32"><rect x="3" y="6" width="22" height="16" fill="#fff" stroke="#444"/><text x="14" y="18" font-size="9" text-anchor="middle" font-weight="700" fill="#185ABD">ABC</text><circle cx="22" cy="21" r="5" fill="#fff" stroke="#444" stroke-width="1.6"/><path d="M26 25l4 4" stroke="#444" stroke-width="2"/></svg>',
+  find:'<svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" fill="none" stroke="#444" stroke-width="1.5"/><path d="M10.5 10.5L15 15" stroke="#444" stroke-width="1.8"/></svg>',
+  chk:'<svg viewBox="0 0 16 16"><rect x="1" y="2" width="11" height="12" fill="#fff" stroke="#444"/><path d="M6 9l3 3 6-8" fill="none" stroke="#107C10" stroke-width="2"/></svg>',
+  fin:'<svg viewBox="0 0 32 32"><path d="M6 3h13l6 6v20H6z" fill="#fff" stroke="#444"/><path d="M19 3v6h6" fill="none" stroke="#444"/><circle cx="22" cy="23" r="7" fill="#107C10"/><path d="M18.5 23l2.5 2.5 4.5-5" fill="none" stroke="#fff" stroke-width="2"/></svg>',
+  doc:'<svg viewBox="0 0 16 16"><path d="M3 1h7l3 3v11H3z" fill="#fff" stroke="#444"/></svg>',
+  print:'<svg viewBox="0 0 16 16"><rect x="4" y="1" width="8" height="5" fill="#fff" stroke="#444"/><rect x="1" y="6" width="14" height="6" fill="#ddd" stroke="#444"/><rect x="4" y="10" width="8" height="5" fill="#fff" stroke="#444"/></svg>',
+  mail:'<svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" fill="#fff" stroke="#185ABD"/><path d="M1 4l7 5 7-5" fill="none" stroke="#185ABD"/></svg>',
+  wiz:'<svg viewBox="0 0 16 16"><path d="M2 14L12 4" stroke="#444" stroke-width="2"/><path d="M12 1l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#F2C661"/></svg>',
+  paste:'<svg viewBox="0 0 32 32"><rect x="6" y="5" width="18" height="23" rx="2" fill="#C8A97E" stroke="#444"/><rect x="11" y="3" width="8" height="5" rx="1" fill="#fff" stroke="#444"/><rect x="14" y="12" width="14" height="17" fill="#fff" stroke="#185ABD"/></svg>',
+  table:'<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" fill="#fff" stroke="#444"/><path d="M4 12h24M4 19h24M12 6v20M20 6v20" stroke="#444"/><rect x="4" y="6" width="24" height="6" fill="#9CC3F5" opacity=".6"/></svg>',
+  pic:'<svg viewBox="0 0 32 32"><rect x="4" y="6" width="24" height="20" fill="#fff" stroke="#444"/><circle cx="11" cy="12" r="3" fill="#F2C661"/><path d="M4 24l8-8 6 6 4-4 6 6" fill="#9CC3F5" stroke="#185ABD"/></svg>',
+  shape:'<svg viewBox="0 0 32 32"><circle cx="12" cy="13" r="7" fill="#9CC3F5" stroke="#185ABD"/><rect x="14" y="15" width="13" height="11" fill="#fff" stroke="#444"/></svg>'
+};
+
+/* ==================================================================
+   الحالة (State)
+   ================================================================== */
+const DEFAULT_FIELDS=['اللقب','الاسم الأول','اسم العائلة','اسم الشركة','سطر العنوان 1','سطر العنوان 2','المدينة','الولاية','الرمز البريدي','البلد أو المنطقة','هاتف المنزل','هاتف العمل','عنوان البريد الإلكتروني'];
+const DOC_TYPES={letters:'رسائل',email:'رسائل البريد الإلكتروني',envelopes:'مغلفات',labels:'تسميات',directory:'دليل',normal:'مستند Word عادي'};
+const S={ tab:'home', docType:'normal', wizard:false, step:1, wizType:'letters', wizStart:'current', wizRec:'new',
+  list:null, preview:false, rec:0, highlight:false, fieldsForNew:[...DEFAULT_FIELDS] };
+const FIELD=n=>n.replace(/ /g,'_');
+const included=()=>S.list?S.list.rows.map((r,i)=>i).filter(i=>S.list.inc[i]!==false):[];
+
+/* خطوات الدرس (مطابقة للكتاب) */
+const COACH=['فتح تبويب «مراسلات»','بدء دمج المراسلات ← المعالج خطوة بخطوة','الخطوة ١: اختيار «رسائل»','الخطوة ٢: «استخدام المستند الحالي»','الخطوة ٣: «كتابة قائمة جديدة» ← إنشاء','تخصيص الأعمدة: الاسم الأول، اسم العائلة، الصف','إدخال بيانات ٣ مستلمات على الأقل ← موافق','حفظ قائمة العناوين في المستندات','إدراج حقول الدمج في الرسالة','معاينة الرسائل','إتمام الدمج (طباعة أو تحرير رسائل فردية)'];
+const done=new Set();
+const CH_MIN_ROWS=3;   // الحد الأدنى لعدد المستلمات في المهمة
+function mark(i){ if(done.has(i)) return; done.add(i); drawCoach(); chalProgress(); if(i===10&&CH.on) setTimeout(()=>finishChallenge('done'),1800); }
+function drawCoach(){ $('#coachList').innerHTML=COACH.map((t,i)=>`<li class="${done.has(i)?'ok':''}"><i>${done.has(i)?'✓':''}</i>${t}</li>`).join(''); }
+drawCoach();
+
+/* المستند الافتراضي (دعوة المتحف الوطني من الكتاب) */
+const DEFAULT_DOC=`<p>إلى: </p><p>الصف: </p><p>مرحبًا،</p><p>ندعوكِ لحضور اجتماعنا السنوي في المتحف الوطني للمملكة العربية السعودية.</p><p>سيُقام الحدث يوم ١٣ محرم في تمام الساعة ٧ مساءً.</p><p>نودّ أن تنضمّي إلينا لاكتشاف قرون من التاريخ والثقافة العربية في أكبر متحف في المملكة العربية السعودية.</p><p>يسعدنا حضوركِ.</p><div class="pic" contenteditable="false"><span>🏛️</span></div><p><br></p>`;
+page.innerHTML=DEFAULT_DOC;
+
+/* ==================================================================
+   التبويبات والشريط
+   ================================================================== */
+const TABS=[['file','ملف'],['home','الشريط الرئيسي'],['insert','إدراج'],['draw','رسم'],['design','تصميم'],['layout','تخطيط'],['refs','مراجع'],['mailings','مراسلات'],['review','مراجعة'],['view','عرض'],['help','تعليمات']];
+function drawTabs(){
+  $('#tabs').innerHTML=TABS.map(([k,t])=>`<button data-t="${k}" class="${k==='file'?'file':''} ${S.tab===k?'on':''}">${t}</button>`).join('')+`<div class="rt"><span>💬 تعليقات</span><span>✏️ تحرير ▾</span><span style="background:#185ABD;color:#fff;border-color:#185ABD">مشاركة</span></div>`;
+  $$('#tabs [data-t]').forEach(b=>b.onclick=()=>{ if(b.dataset.t==='file'){ openBackstage(); return; } S.tab=b.dataset.t; if(S.tab==='mailings') mark(0); drawTabs(); drawRibbon(); });
+}
+const big=(id,icon,label,o={})=>`<button class="big ${o.dd?'dd':''} ${o.dis?'dis':''} ${o.on?'on':''}" data-b="${id}">${icon}<span>${label}</span></button>`;
+const sm=(id,icon,label,o={})=>`<button class="sm ${o.dd?'dd':''} ${o.dis?'dis':''} ${o.on?'on':''}" data-b="${id}">${icon||''}<span>${label}</span></button>`;
+const grp=(name,inner)=>`<div class="grp"><div class="it">${inner}</div><div class="gn">${name}</div></div>`;
+
+function drawRibbon(){
+  const R=$('#ribbon'); let h='';
+  const hasList=!!S.list, merging=S.docType!=='normal', canWrite=hasList;
+  if(S.tab==='mailings'){
+    h=grp('إنشاء',big('envelopes',I.env,'مغلفات')+big('labels',I.lbl,'تسميات'))+
+      grp('بدء دمج المراسلات',big('startmm',I.start,'بدء دمج<br>المراسلات',{dd:1})+big('selrec',I.rec,'تحديد<br>المستلمين',{dd:1})+big('editrec',I.edit,'تحرير قائمة<br>المستلمين',{dis:!hasList}))+
+      grp('كتابة وإدراج الحقول',big('hlf',I.hlf,'تمييز حقول<br>الدمج',{dis:!canWrite,on:S.highlight})+big('addrblk',I.addr,'كتلة<br>العنوان',{dis:!canWrite})+big('greet',I.greet,'سطر<br>الترحيب',{dis:!canWrite})+big('insfield',I.field,'إدراج حقل<br>دمج',{dd:1,dis:!canWrite})+
+        `<div class="col3">${sm('rules',I.rule,'قواعد',{dd:1,dis:!canWrite})}${sm('match',I.match,'مطابقة الحقول',{dis:!canWrite})}${sm('updlbl',I.upd,'تحديث التسميات',{dis:true})}</div>`)+
+      grp('معاينة النتائج',big('preview',I.prev,'معاينة<br>النتائج',{dis:!canWrite,on:S.preview})+
+        `<div class="col3"><div class="nav ${!S.preview?'dis':''}"><button data-b="first" title="السجل الأول">⏮</button><button data-b="prevr" title="السابق">◀</button><input id="recNo" value="${S.preview?S.rec+1:1}"><button data-b="nextr" title="التالي">▶</button><button data-b="last" title="السجل الأخير">⏭</button></div>${sm('findrec',I.find,'البحث عن مستلم',{dis:!S.preview})}${sm('checkerr',I.chk,'التحقق من الأخطاء',{dis:!canWrite})}</div>`)+
+      grp('إنهاء',big('finish',I.fin,'إنهاء<br>ودمج',{dd:1,dis:!canWrite}));
+  } else if(S.tab==='home'){
+    h=grp('الحافظة',big('paste',I.paste,'لصق',{dd:1})+`<div class="col3">${sm('cut','✂️','قص')}${sm('copy','📄','نسخ')}${sm('fmtp','🖌️','نسخ التنسيق')}</div>`)+
+      grp('خط',`<div><div class="fbox"><select id="fFam"><option>Calibri (النص الأساسي)</option><option>Arial</option><option>Times New Roman</option><option>Tahoma</option><option>Sakkal Majalla</option></select><select id="fSize">${[8,9,10,11,12,14,16,18,20,24,28,36,48,72].map(n=>`<option ${n===11?'selected':''}>${n}</option>`).join('')}</select></div>
+        <div class="fbox"><button class="tb" data-x="bold"><b>B</b></button><button class="tb" data-x="italic"><i>I</i></button><button class="tb" data-x="underline"><u>U</u></button><button class="tb" data-x="strikeThrough"><s>ab</s></button><button class="tb" data-x="subscript">x₂</button><button class="tb" data-x="superscript">x²</button>
+        <button class="tb" data-color="#FFFF00" title="لون تمييز النص" style="border-bottom:4px solid #FFFF00">ab</button><button class="tb" data-fc="#C00000" title="لون الخط" style="border-bottom:4px solid #C00000;color:#C00000">A</button></div></div>`)+
+      grp('فقرة',`<div><div class="fbox"><button class="tb" data-x="insertUnorderedList">•≡</button><button class="tb" data-x="insertOrderedList">1≡</button><button class="tb" data-x="outdent">⇤</button><button class="tb" data-x="indent">⇥</button></div>
+        <div class="fbox"><button class="tb" data-x="justifyRight">≡›</button><button class="tb" data-x="justifyCenter">≡</button><button class="tb" data-x="justifyLeft">‹≡</button><button class="tb" data-x="justifyFull">☰</button></div></div>`)+
+      grp('أنماط',`<div style="display:flex;gap:4px">${['عادي','بلا تباعد','عنوان 1','عنوان 2','العنوان'].map((t,i)=>`<button class="big" style="width:74px;min-height:60px;border:1px solid #E1DFDD;background:#fff" data-style="${['P','P','H1','H2','H1'][i]}"><span style="font-size:${[13,13,16,14,20][i]}px;color:${i>1?'#2F5496':'#000'}">أب</span><span style="font-size:11px">${t}</span></button>`).join('')}</div>`)+
+      grp('تحرير',`<div class="col3">${sm('find',I.find,'بحث',{dd:1})}${sm('replace','↔️','استبدال')}${sm('selall','⬚','تحديد',{dd:1})}</div>`);
+  } else if(S.tab==='insert'){
+    h=grp('الصفحات',big('cover','📔','صفحة<br>غلاف',{dd:1})+big('blankp','📃','صفحة<br>فارغة')+big('pbreak','⤓','فاصل<br>صفحات'))+grp('جداول',big('instable',I.table,'جدول',{dd:1}))+
+      grp('رسومات توضيحية',big('inspic',I.pic,'صور',{dd:1})+big('shapes',I.shape,'أشكال',{dd:1})+big('icons','⭐','أيقونات')+big('smart','🧩','SmartArt')+big('chart','📊','مخطط'))+
+      grp('ارتباطات',big('link','🔗','ارتباط'))+grp('نص',big('textbox','🅰️','مربع<br>نص')+big('wordart','𝒜','WordArt'))+grp('الرموز',big('eq','π','معادلة')+big('sym','Ω','رمز'));
+  } else {
+    const names={draw:'أدوات الرسم',design:'تنسيق المستند',layout:'إعداد الصفحة',refs:'جدول المحتويات',review:'تدقيق',view:'طرق العرض',help:'تعليمات'};
+    h=grp(names[S.tab]||'',big('na','🧰','غير مفعّل<br>في المحاكي',{dis:true}));
+  }
+  R.innerHTML=h; bindRibbon();
+}
+
+function bindRibbon(){
+  $$('#ribbon [data-b]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); ACT[b.dataset.b]?ACT[b.dataset.b](b):toast('هذه الميزة غير مفعّلة في المحاكي التعليمي'); });
+  $$('#ribbon [data-x]').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); document.execCommand(b.dataset.x,false,null); updWords(); });
+  $$('#ribbon [data-color]').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); document.execCommand('hiliteColor',false,b.dataset.color); });
+  $$('#ribbon [data-fc]').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); document.execCommand('foreColor',false,b.dataset.fc); });
+  $$('#ribbon [data-style]').forEach(b=>b.onmousedown=e=>{ e.preventDefault(); document.execCommand('formatBlock',false,b.dataset.style); });
+  const fs=$('#fSize'); if(fs) fs.onchange=()=>{ restoreSel(); const map={8:1,9:1,10:2,11:3,12:3,14:4,16:4,18:5,20:5,24:6,28:6,36:7,48:7,72:7}; document.execCommand('fontSize',false,map[fs.value]); };
+  const ff=$('#fFam'); if(ff) ff.onchange=()=>{ restoreSel(); document.execCommand('fontName',false,ff.value.split(' (')[0]); };
+  const rn=$('#recNo'); if(rn) rn.onchange=()=>{ goRec((+rn.value||1)-1); };
+}
+
+/* حفظ موضع المؤشر داخل المستند لإدراج الحقول في مكانه */
+let lastRange=null;
+document.addEventListener('selectionchange',()=>{ const s=getSelection(); if(s.rangeCount&&page.contains(s.anchorNode)) lastRange=s.getRangeAt(0).cloneRange(); });
+function restoreSel(){ if(lastRange){ const s=getSelection(); s.removeAllRanges(); s.addRange(lastRange); } }
+
+/* ==================================================================
+   القوائم المنسدلة ومربعات الحوار
+   ================================================================== */
+function menu(anchor,items){
+  closeMenus(); const m=document.createElement('div'); m.className='menu';
+  m.innerHTML=items.map((it,i)=>it==='-'?'<hr>':`<button data-i="${i}" class="${it.dis?'dis':''}">${it.icon||'<span style="width:18px"></span>'}<span>${it.t}</span></button>`).join('');
+  app.appendChild(m); const r=anchor.getBoundingClientRect(), a=app.getBoundingClientRect();
+  const s2=a.width/AW; m.style.top=((r.bottom-a.top)/s2)+'px'; m.style.right=Math.max(4,(a.right-r.right)/s2)+'px';
+  $$('button',m).forEach(b=>b.onclick=e=>{ e.stopPropagation(); closeMenus(); items[+b.dataset.i].on&&items[+b.dataset.i].on(); });
+}
+function closeMenus(){ $$('.menu').forEach(m=>m.remove()); }
+document.addEventListener('mousedown',e=>{ if(!e.target.closest('.menu')&&!e.target.closest('[data-b]')) closeMenus(); });
+
+/* مربع حوار عام: dialog({title,w,body,buttons:[{t,pr,on,close}],init}) */
+function dialog(o){
+  const mask=document.createElement('div'); mask.className='mask';
+  mask.innerHTML=`<div class="dlg" style="width:${o.w||460}px"><div class="dh"><span>${o.title}</span><button class="x">✕</button></div><div class="db">${o.body}</div>
+    <div class="df ${o.rtlFoot?'rtl':''}">${(o.buttons||[]).map((b,i)=>`<button class="btn ${b.pr?'pr':''}" data-k="${i}" ${b.dis?'disabled':''}>${b.t}</button>`).join('')}</div></div>`;
+  app.appendChild(mask); const d=$('.dlg',mask);
+  const close=()=>mask.remove(); d.close=close;
+  $('.x',mask).onclick=()=>{ close(); o.onCancel&&o.onCancel(); };
+  $$('.df [data-k]',mask).forEach(b=>b.onclick=()=>{ const bt=o.buttons[+b.dataset.k]; if(bt.on&&bt.on(d)===false) return; if(bt.close!==false) close(); });
+  o.init&&o.init(d); return d;
+}
+function msgbox(text,icon='ℹ️',title='Microsoft Word',after){ dialog({title,w:420,body:`<div class="row" style="align-items:flex-start;padding:10px 0"><span class="msgicon">${icon}</span><div style="line-height:1.6">${text}</div></div>`,buttons:[{t:'موافق',pr:1,on:after}]}); }
+function prompt2(title,label,val,cb){ dialog({title,w:380,body:`<div style="padding:6px 0">${label}</div><input type="text" style="width:100%" value="${esc(val||'')}">`,buttons:[{t:'موافق',pr:1,on:d=>{ const v=$('input',d).value.trim(); if(!v) return false; cb(v); }},{t:'إلغاء'}],init:d=>setTimeout(()=>{ const i=$('input',d); i.focus(); i.select(); i.onkeydown=e=>{ if(e.key==='Enter') $('.df .pr',d).click(); }; },50)}); }
+
+/* ==================================================================
+   الإجراءات (أزرار الشريط)
+   ================================================================== */
+const ACT={
+  startmm(b){ menu(b,[
+    {t:'رسائل',icon:I.doc,on:()=>setDocType('letters')},{t:'رسائل البريد الإلكتروني',icon:I.mail,on:()=>setDocType('email')},
+    {t:'مغلفات...',icon:I.mail,on:()=>ACT.envelopes()},{t:'تسميات...',icon:I.doc,on:()=>ACT.labels()},{t:'دليل',icon:I.doc,on:()=>setDocType('directory')},
+    {t:'مستند Word عادي',icon:I.doc,on:()=>setDocType('normal')},'-',{t:'معالج دمج المراسلات خطوة بخطوة...',icon:I.wiz,on:()=>openWizard()}]); },
+  selrec(b){ menu(b,[{t:'كتابة قائمة جديدة...',icon:I.edit,on:()=>newList()},{t:'استخدام قائمة موجودة...',icon:I.doc,on:()=>useExisting()},{t:'الاختيار من جهات اتصال Outlook...',icon:I.rec,on:()=>outlook()}]); },
+  editrec(){ recipientsDlg(); },
+  hlf(){ S.highlight=!S.highlight; page.classList.toggle('hl',S.highlight); drawRibbon(); },
+  addrblk(){ addressBlockDlg(); }, greet(){ greetingDlg(); },
+  insfield(b){ menu(b,S.list.fields.map(f=>({t:f,on:()=>insertField(f)}))); },
+  rules(b){ menu(b,['اسأل','املأ','إذا...عندئذ...وإلا...','رقم سجل الدمج','رقم تسلسل الدمج','السجل التالي','السجل التالي إذا...','تعيين إشارة مرجعية','تخطي السجل إذا...'].map(t=>({t,on:()=>t.startsWith('إذا')?ifDlg():msgbox('هذه القاعدة غير مفعّلة في المحاكي. جرّبي «إذا...عندئذ...وإلا...».')}))); },
+  match(){ matchDlg(); },
+  preview(){ setPreview(!S.preview); },
+  first(){ goRec(0); }, last(){ goRec(included().length-1); }, prevr(){ goRec(S.rec-1); }, nextr(){ goRec(S.rec+1); },
+  findrec(){ findDlg(); }, checkerr(){ checkDlg(); },
+  finish(b){ menu(b,[{t:'تحرير مستندات فردية...',icon:I.doc,on:()=>mergeDlg('edit')},{t:'طباعة المستندات...',icon:I.print,on:()=>mergeDlg('print')},{t:'إرسال رسائل بريد إلكتروني...',icon:I.mail,on:()=>emailDlg()}]); },
+  envelopes(){ envDlg('env'); }, labels(){ envDlg('lbl'); },
+  // الشريط الرئيسي والإدراج
+  paste(){ toast('استخدمي Ctrl + V للصق داخل المستند'); }, cut(){ document.execCommand('cut'); }, copy(){ document.execCommand('copy'); toast('تم النسخ'); },
+  selall(){ page.focus(); document.execCommand('selectAll'); },
+  instable(b){ menu(b,[2,3,4].map(n=>({t:`إدراج جدول ${n}×${n}`,on:()=>{ restoreSel(); document.execCommand('insertHTML',false,`<table>${Array(n).fill('<tr>'+Array(n).fill('<td>&nbsp;</td>').join('')+'</tr>').join('')}</table><p><br></p>`); }}))); },
+  inspic(b){ menu(b,[{t:'هذا الجهاز...',on:()=>toast('غير متاح في المحاكي')},{t:'صور مخزنة...',on:()=>insPic('🖼️')},{t:'صور عبر الإنترنت...',on:()=>insPic('🏛️')}]); },
+  pbreak(){ restoreSel(); document.execCommand('insertHTML',false,'<p class="pgsep" contenteditable="false">—— فاصل صفحات ——</p><p><br></p>'); }
+};
+function insPic(e){ restoreSel(); document.execCommand('insertHTML',false,`<div class="pic" contenteditable="false"><span>${e}</span></div><p><br></p>`); }
+
+function setDocType(t){ S.docType=t; if(t==='normal'){ S.list=null; S.preview=false; page.classList.remove('preview'); } drawRibbon(); if(S.wizard) drawPane(); toast(t==='normal'?'تم الرجوع إلى مستند Word عادي':'نوع مستند الدمج: '+DOC_TYPES[t]); }
+function outlook(){ msgbox('لم يتم العثور على جهات اتصال في Outlook على هذا الجهاز.<br>اختاري «كتابة قائمة جديدة» أو «استخدام قائمة موجودة».','⚠️'); }
+
+/* ==================================================================
+   قائمة العناوين الجديدة + تخصيص الأعمدة + الحفظ
+   ================================================================== */
+function newList(editExisting){
+  if(!editExisting && S.docType==='normal') S.docType='letters';
+  const L = editExisting ? JSON.parse(JSON.stringify(S.list)) : { name:'', fields:[...S.fieldsForNew], rows:[S.fieldsForNew.map(()=> '')], inc:[] };
+  let cur=0;
+  const d=dialog({title:editExisting?'تحرير مصدر البيانات':'قائمة عناوين جديدة',w:980,
+    body:`<div style="margin-bottom:8px">اكتب معلومات المستلم في الجدول. لإضافة المزيد من الإدخالات، انقر فوق «إدخال جديد».</div>
+      <div class="grid" style="height:300px"><table></table></div>
+      <div class="row" style="margin-top:10px;justify-content:space-between"><div class="row">
+        <button class="btn" data-a="new">إدخال جديد</button><button class="btn" data-a="find">بحث...</button></div>
+        <div class="row"><button class="btn" data-a="del">حذف إدخال</button><button class="btn" data-a="cust">تخصيص أعمدة...</button></div></div>
+      <div style="margin-top:8px;color:#605E5C" class="cnt"></div>`,
+    buttons:[{t:'موافق',pr:1,on:()=>{ const rows=L.rows.filter(r=>r.some(v=>String(v).trim())); if(!rows.length){ msgbox('أدخلي بيانات مستلم واحد على الأقل.','⚠️'); return false; }
+        L.rows=rows; L.inc=rows.map(()=>true);
+        if(L.fields.includes('الاسم الأول')&&L.fields.includes('اسم العائلة')&&L.fields.includes('الصف')) mark(5);
+        if(rows.length>=CH_MIN_ROWS) mark(6);
+        if(editExisting){ S.list=L; saveListStore(L); afterList(); } else saveDlg(L); }},{t:'إلغاء'}],
+    init:dd=>{
+      const draw=()=>{ $('table',dd).innerHTML=`<tr><th style="width:24px"></th>${L.fields.map(f=>`<th>${esc(f)}</th>`).join('')}</tr>`+L.rows.map((r,i)=>`<tr class="${i===cur?'cur':''}"><td class="ro">${i===cur?'◀':''}</td>${L.fields.map((_,j)=>`<td><input data-r="${i}" data-c="${j}" value="${esc(r[j]??'')}"></td>`).join('')}</tr>`).join('');
+        $$('input',dd.querySelector('table')).forEach(inp=>{ inp.oninput=()=>{ L.rows[inp.dataset.r][inp.dataset.c]=inp.value; }; inp.onfocus=()=>{ if(cur!==+inp.dataset.r){ cur=+inp.dataset.r; $$('tr',dd.querySelector('table')).forEach((tr,k)=>{ tr.classList.toggle('cur',k-1===cur); if(k) tr.firstChild.textContent=k-1===cur?'◀':''; }); } }; inp.onkeydown=e=>{ if(e.key==='Tab'&&!e.shiftKey&&+inp.dataset.c===L.fields.length-1&&+inp.dataset.r===L.rows.length-1){ e.preventDefault(); addRow(); } }; });
+        $('.cnt',dd).textContent=`إدخالات ${cur+1} من ${L.rows.length}`; };
+      const addRow=()=>{ L.rows.push(L.fields.map(()=>'')); cur=L.rows.length-1; draw(); const ins=$$(`input[data-r="${cur}"]`,dd); ins[0]&&ins[0].focus(); };
+      $('[data-a=new]',dd).onclick=addRow;
+      $('[data-a=del]',dd).onclick=()=>{ dialog({title:'Microsoft Word',w:420,body:'<div class="row" style="padding:10px 0"><span class="msgicon">⚠️</span>هل تريد بالتأكيد حذف هذا الإدخال؟</div>',buttons:[{t:'نعم',pr:1,on:()=>{ L.rows.splice(cur,1); if(!L.rows.length) L.rows.push(L.fields.map(()=>'')); cur=Math.max(0,cur-1); draw(); }},{t:'لا'}]}); };
+      $('[data-a=find]',dd).onclick=()=>prompt2('البحث عن إدخال','بحث عن:','',q=>{ const i=L.rows.findIndex(r=>r.some(v=>String(v).includes(q))); if(i<0) msgbox('لم يتم العثور على «'+esc(q)+'».'); else { cur=i; draw(); } });
+      $('[data-a=cust]',dd).onclick=()=>customizeDlg(L,draw);
+      draw(); setTimeout(()=>{ const i=$('input',dd.querySelector('table')); i&&i.focus(); },60);
+    }});
+}
+
+function customizeDlg(L,redraw){
+  let sel=0; const F=[...L.fields]; const map=F.map((_,i)=>i); // تتبّع أعمدة البيانات
+  dialog({title:'تخصيص قائمة العناوين',w:520,
+    body:`<div style="margin-bottom:6px">أسماء الحقول</div><div class="row" style="align-items:flex-start"><div class="lst" style="flex:1;height:280px"></div>
+      <div class="side"><button class="btn" data-a="add">إضافة...</button><button class="btn" data-a="del">حذف</button><button class="btn" data-a="ren">إعادة تسمية...</button><div style="height:20px"></div><button class="btn" data-a="up">نقل لأعلى</button><button class="btn" data-a="down">نقل لأسفل</button></div></div>`,
+    buttons:[{t:'موافق',pr:1,on:()=>{ const rows=L.rows.map(r=>map.map(k=>k===-1?'':(r[k]??''))); L.fields=F; L.rows=rows; redraw(); if(F.length===3&&F.includes('الاسم الأول')&&F.includes('اسم العائلة')&&F.includes('الصف')) mark(5); }},{t:'إلغاء'}],
+    init:d=>{
+      const draw=()=>{ $('.lst',d).innerHTML=F.map((f,i)=>`<div class="${i===sel?'on':''}" data-i="${i}">${esc(f)}</div>`).join(''); $$('.lst div',d).forEach(x=>x.onclick=()=>{ sel=+x.dataset.i; draw(); }); };
+      $('[data-a=add]',d).onclick=()=>prompt2('إضافة حقل','اكتب اسمًا للحقل','',v=>{ if(F.includes(v)) return msgbox('يوجد حقل بهذا الاسم.','⚠️'); F.splice(sel+1,0,v); map.splice(sel+1,0,-1); sel++; draw(); });
+      $('[data-a=del]',d).onclick=()=>{ if(!F.length) return; dialog({title:'Microsoft Word',w:440,body:`<div class="row" style="padding:10px 0"><span class="msgicon">⚠️</span>هل أنت متأكد أنك تريد حذف الحقل «${esc(F[sel])}»؟</div>`,buttons:[{t:'نعم',pr:1,on:()=>{ F.splice(sel,1); map.splice(sel,1); sel=Math.min(sel,F.length-1); draw(); }},{t:'لا'}]}); };
+      $('[data-a=ren]',d).onclick=()=>prompt2('إعادة تسمية الحقل','إلى:',F[sel],v=>{ F[sel]=v; draw(); });
+      $('[data-a=up]',d).onclick=()=>{ if(sel>0){ [F[sel-1],F[sel]]=[F[sel],F[sel-1]]; [map[sel-1],map[sel]]=[map[sel],map[sel-1]]; sel--; draw(); } };
+      $('[data-a=down]',d).onclick=()=>{ if(sel<F.length-1){ [F[sel+1],F[sel]]=[F[sel],F[sel+1]]; [map[sel+1],map[sel]]=[map[sel],map[sel+1]]; sel++; draw(); } };
+      draw(); }});
+}
+
+/* نافذة حفظ قائمة العناوين (مستكشف ملفات) */
+function saveListStore(L){ const all=LS.get('wordsim-lists',{}); all[L.name]=L; LS.set('wordsim-lists',all); }
+function saveDlg(L){
+  let folder='المستندات';
+  dialog({title:'حفظ قائمة العناوين',w:760,
+    body:`<div class="row" style="margin-bottom:8px;color:#333">← → ↑ &nbsp; <span style="border:1px solid #ccc;padding:3px 10px;flex:1" class="path">هذا الكمبيوتر الشخصي › المستندات › مصادر البيانات الخاصة بي</span></div>
+      <div class="explorer"><div class="tree">${['⭐ الوصول السريع','🖥️ سطح المكتب','📄 المستندات','⬇️ التنزيلات','🖼️ الصور','💻 هذا الكمبيوتر الشخصي'].map(t=>`<div class="${t.includes('المستندات')?'on':''}">${t}</div>`).join('')}</div>
+      <div class="files">${Object.keys(LS.get('wordsim-lists',{})).map(n=>`<div>🗂️ ${esc(n)}.mdb</div>`).join('')||'<div style="color:#999">لا توجد عناصر مطابقة لبحثك.</div>'}</div></div>
+      <div class="row" style="margin-top:10px"><span style="width:90px">اسم الملف:</span><input type="text" class="fn" style="flex:1" value="${esc(L.name||'قائمة المدعوات')}"></div>
+      <div class="row" style="margin-top:6px"><span style="width:90px">حفظ بنوع:</span><select style="flex:1"><option>Microsoft Office Address Lists (*.mdb)</option></select></div>`,
+    buttons:[{t:'حفظ',pr:1,on:d=>{ const n=$('.fn',d).value.trim(); if(!n) return false; L.name=n; S.list=L; saveListStore(L); if(folder==='المستندات') mark(7); recipientsDlg(true); }},{t:'إلغاء'}],
+    init:d=>{ $$('.tree div',d).forEach(x=>x.onclick=()=>{ $$('.tree div',d).forEach(y=>y.classList.remove('on')); x.classList.add('on'); folder=x.textContent.slice(2).trim(); $('.path',d).textContent='هذا الكمبيوتر الشخصي › '+folder; }); setTimeout(()=>$('.fn',d).select(),60); }});
+}
+
+/* استخدام قائمة موجودة: قوائم محفوظة + كشف الفصل من العرض التفاعلي */
+function classRoster(){ try{ const c=JSON.parse(localStorage.getItem('digital-skills-class-v1')||'{}'); return c.roster||null; }catch(e){ return null; } }
+function useExisting(){
+  if(S.docType==='normal') S.docType='letters';
+  const saved=LS.get('wordsim-lists',{}); const roster=classRoster();
+  const files=[...(roster?[{n:'قائمة طالبات الفصل.xlsx',k:'roster',i:'📗'}]:[{n:'قائمة طالبات الفصل.xlsx',k:'demo',i:'📗'}]),...Object.keys(saved).map(n=>({n:n+'.mdb',k:n,i:'🗂️'}))];
+  let pick=0;
+  dialog({title:'تحديد مصدر البيانات',w:760,
+    body:`<div class="row" style="margin-bottom:8px">← → ↑ &nbsp;<span style="border:1px solid #ccc;padding:3px 10px;flex:1">هذا الكمبيوتر الشخصي › المستندات › مصادر البيانات الخاصة بي</span></div>
+      <div class="explorer"><div class="tree">${['⭐ الوصول السريع','🖥️ سطح المكتب','📄 المستندات','⬇️ التنزيلات'].map(t=>`<div class="${t.includes('المستندات')?'on':''}">${t}</div>`).join('')}</div>
+      <div class="files">${files.map((f,i)=>`<div data-i="${i}" class="${i===0?'on':''}">${f.i} ${esc(f.n)}</div>`).join('')}</div></div>
+      <div class="row" style="margin-top:10px"><span style="width:90px">اسم الملف:</span><input type="text" class="fn" style="flex:1" value="${esc(files[0].n)}" readonly><select><option>جميع مصادر البيانات</option></select></div>`,
+    buttons:[{t:'فتح',pr:1,on:()=>{ const f=files[pick]; let L;
+      if(f.k==='roster'||f.k==='demo'){ const names=f.k==='roster'?roster:['سارة العتيبي','نورة الحربي','ريم السبيعي','جود المطيري','لين الماضي','غنى الميمان'];
+        L={name:'قائمة طالبات الفصل',fields:['الاسم الأول','اسم العائلة','الصف'],rows:names.map(n=>{ const w=n.split(/\s+/).filter(x=>x!=='بنت'&&x!=='بن'); return [w[0]||'',w.length>1?w[w.length-1]:'','الأول المتوسط']; })}; }
+      else L=JSON.parse(JSON.stringify(saved[f.k]));
+      L.inc=L.rows.map(()=>true); S.list=L; recipientsDlg(true); }},{t:'إلغاء'}],
+    init:d=>$$('.files [data-i]',d).forEach(x=>{ x.onclick=()=>{ pick=+x.dataset.i; $$('.files div',d).forEach(y=>y.classList.remove('on')); x.classList.add('on'); $('.fn',d).value=files[pick].n; }; x.ondblclick=()=>$('.df .pr',d).click(); })});
+}
+
+/* مستلمو دمج المراسلات */
+function recipientsDlg(first){
+  const L=S.list; let sortK=-1;
+  dialog({title:'مستلمو دمج المراسلات',w:980,
+    body:`<div style="margin-bottom:8px;line-height:1.6">هذه هي قائمة المستلمين الذين سيتم استخدامهم في الدمج. استخدم الخيارات التالية للإضافة إلى قائمتك أو تغييرها. استخدم خانات الاختيار لإضافة المستلمين إلى الدمج أو إزالتهم منه. عندما تصبح قائمتك جاهزة، انقر فوق «موافق».</div>
+      <div class="grid" style="height:260px"><table></table></div>
+      <div class="row" style="margin-top:10px;align-items:flex-start;gap:24px"><div style="flex:1"><div>مصدر البيانات</div><div class="lst" style="height:70px"><div class="on">${esc(L.name)}${L.name.includes('.')?'':'.mdb'}</div></div>
+        <div class="row" style="margin-top:6px"><button class="btn" data-a="edit">تحرير...</button><button class="btn" data-a="refresh">تحديث</button></div></div>
+        <div style="flex:1"><div>تحسين قائمة المستلمين</div><div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+          <span class="lnk" style="color:#185ABD;text-decoration:underline;cursor:pointer" data-a="sort">↕ فرز...</span><span style="color:#185ABD;text-decoration:underline;cursor:pointer" data-a="filter">⚲ تصفية...</span>
+          <span style="color:#185ABD;text-decoration:underline;cursor:pointer" data-a="dup">⧉ البحث عن التكرارات...</span><span style="color:#185ABD;text-decoration:underline;cursor:pointer" data-a="find">🔍 البحث عن مستلم...</span></div></div></div>`,
+    buttons:[{t:'موافق',pr:1,on:()=>{ afterList(); }}],
+    init:d=>{
+      const draw=()=>{ $('table',d).innerHTML=`<tr><th>مصدر البيانات</th><th>✔</th>${L.fields.map((f,i)=>`<th data-s="${i}" style="cursor:pointer">${esc(f)} ▾</th>`).join('')}</tr>`+
+        L.rows.map((r,i)=>`<tr><td class="ro">${esc(L.name)}</td><td class="ro"><input type="checkbox" data-i="${i}" ${L.inc[i]!==false?'checked':''}></td>${L.fields.map((_,j)=>`<td class="ro">${esc(r[j]??'')}</td>`).join('')}</tr>`).join('');
+        $$('input[type=checkbox]',d).forEach(c=>c.onchange=()=>{ L.inc[+c.dataset.i]=c.checked; });
+        $$('th[data-s]',d).forEach(th=>th.onclick=()=>sortBy(+th.dataset.s)); };
+      const sortBy=k=>{ const z=L.rows.map((r,i)=>[r,L.inc[i]]); z.sort((a,b)=>String(a[0][k]).localeCompare(String(b[0][k]),'ar')*(sortK===k?-1:1)); sortK=sortK===k?-1:k; L.rows=z.map(x=>x[0]); L.inc=z.map(x=>x[1]); draw(); };
+      $('[data-a=edit]',d).onclick=()=>{ d.close(); newList(true); };
+      $('[data-a=refresh]',d).onclick=draw;
+      $('[data-a=sort]',d).onclick=()=>sortBy(0);
+      $('[data-a=filter]',d).onclick=()=>msgbox('يمكنكِ استخدام خانات الاختيار ✔ لاستبعاد مستلمين من الدمج.');
+      $('[data-a=dup]',d).onclick=()=>{ const seen=new Set(); const dup=L.rows.filter(r=>{ const k=r.join('|'); if(seen.has(k)) return true; seen.add(k); return false; }).length; msgbox(dup?`تم العثور على ${dup} إدخال مكرر.`:'لم يتم العثور على إدخالات مكررة.'); };
+      $('[data-a=find]',d).onclick=()=>prompt2('البحث عن إدخال','بحث عن:','',q=>{ const i=L.rows.findIndex(r=>r.some(v=>String(v).includes(q))); msgbox(i<0?'لم يتم العثور على «'+esc(q)+'».':`تم العثور على المستلم في السجل ${i+1}.`); });
+      draw(); }});
+}
+function afterList(){ drawRibbon(); if(S.wizard){ S.wizRec='existing'; drawPane(); } if(S.preview) renderFields(); toast(`تم تحديد ${included().length} من المستلمين`); }
+
+/* ==================================================================
+   حقول الدمج في المستند
+   ================================================================== */
+function chip(kind,f,cfg){ const s=document.createElement('span'); s.className='mf'; s.contentEditable='false'; s.dataset.kind=kind; s.dataset.f=f||''; if(cfg) s.dataset.cfg=JSON.stringify(cfg);
+  s.dataset.label=kind==='field'?`«${FIELD(f)}»`:kind==='greet'?'«سطر_الترحيب»':kind==='addr'?'«كتلة_العنوان»':'«إذا»'; s.textContent=s.dataset.label; return s; }
+function insertNodeAtCaret(node){
+  let r=lastRange; if(!r||!page.contains(r.startContainer)){ r=document.createRange(); const p=page.querySelector('p'); r.selectNodeContents(p||page); r.collapse(false); }
+  r.deleteContents(); r.insertNode(node); const pv=node.previousSibling; if(pv&&pv.nodeType===3&&/^[\u200B\u00A0]*$/.test(pv.textContent)&&pv.previousSibling&&pv.previousSibling.classList&&pv.previousSibling.classList.contains('mf')) pv.textContent='\u00A0'; const sp=document.createTextNode('\u200B'); node.after(sp);
+  const nr=document.createRange(); nr.setStartAfter(sp); nr.collapse(true); const s=getSelection(); s.removeAllRanges(); s.addRange(nr); lastRange=nr.cloneRange();
+  mark(8); if(S.preview) renderFields(); updWords();
+}
+function insertField(f){ insertNodeAtCaret(chip('field',f)); }
+page.addEventListener('click',e=>{ $$('.mf.sel',page).forEach(x=>x.classList.remove('sel')); const m=e.target.closest('.mf'); if(m) m.classList.add('sel'); });
+
+function rowVal(f,row){ const L=S.list; const i=L.fields.indexOf(f); return i>-1?(row[i]??''):''; }
+function chipValue(el,row){
+  const k=el.dataset.kind, c=el.dataset.cfg?JSON.parse(el.dataset.cfg):{};
+  if(k==='field') return esc(rowVal(el.dataset.f,row));
+  if(k==='greet'){ const fn=rowVal('الاسم الأول',row), ln=rowVal('اسم العائلة',row); const nm=c.name==='full'?`${fn} ${ln}`.trim():fn; return esc(`${c.sal} ${nm}${c.punct}`.trim()); }
+  if(k==='addr'){ const lines=[[rowVal('اللقب',row),rowVal('الاسم الأول',row),rowVal('اسم العائلة',row)].filter(Boolean).join(' '),rowVal('اسم الشركة',row),rowVal('سطر العنوان 1',row),rowVal('المدينة',row),rowVal('الصف',row)].filter(Boolean); return lines.map(esc).join('<br>'); }
+  if(k==='rule'){ return esc(String(rowVal(c.f,row)).trim()===String(c.v).trim()?c.then:c.else); }
+  return '';
+}
+function renderFields(){
+  const rows=included(), row=S.list&&rows.length?S.list.rows[rows[S.rec]]:null;
+  $$('.mf',page).forEach(el=>{ el.innerHTML=S.preview&&row?chipValue(el,row):el.dataset.label; });
+  page.classList.toggle('preview',S.preview); page.contentEditable=S.preview?'false':'true';
+  const rn=$('#recNo'); if(rn) rn.value=S.rec+1;
+}
+function setPreview(on){ if(!S.list) return; S.preview=on; if(on){ S.rec=Math.min(S.rec,included().length-1); if(S.rec<0) S.rec=0; mark(9); } renderFields(); drawRibbon(); if(S.wizard) drawPane(); }
+function goRec(i){ const n=included().length; if(!n) return; S.rec=Math.max(0,Math.min(n-1,i)); if(!S.preview) S.preview=true; renderFields(); drawRibbon(); if(S.wizard) drawPane(); }
+
+/* سطر الترحيب */
+function greetingDlg(){
+  const c={sal:'عزيزتي',name:'first',punct:'،'};
+  dialog({title:'إدراج سطر الترحيب',w:560,
+    body:`<div class="fs"><span class="lg">تنسيق سطر الترحيب:</span><div class="row"><select data-k="sal"><option>عزيزتي</option><option>عزيزي</option><option>إلى</option><option>مرحبًا</option><option>(بلا)</option></select>
+      <select data-k="name"><option value="first">الاسم الأول</option><option value="full">الاسم الأول واسم العائلة</option></select><select data-k="punct"><option value="،">،</option><option value=":">:</option><option value="">(بلا)</option></select></div></div>
+      <div class="fs"><span class="lg">معاينة</span><div class="pvbox"></div></div>`,
+    buttons:[{t:'موافق',pr:1,on:()=>insertNodeAtCaret(chip('greet','',c))},{t:'إلغاء'}],
+    init:d=>{ const pv=()=>{ const row=S.list.rows[included()[0]]||[]; $('.pvbox',d).textContent=`${c.sal==='(بلا)'?'':c.sal} ${c.name==='full'?rowVal('الاسم الأول',row)+' '+rowVal('اسم العائلة',row):rowVal('الاسم الأول',row)}${c.punct}`; };
+      $$('select',d).forEach(s=>s.onchange=()=>{ c[s.dataset.k]=s.value==='(بلا)'?'':s.value; pv(); }); pv(); }});
+}
+/* كتلة العنوان */
+function addressBlockDlg(){
+  dialog({title:'إدراج كتلة العنوان',w:600,
+    body:`<div class="fs"><span class="lg">تحديد عناصر العنوان</span><label><input type="checkbox" checked> إدراج اسم المستلم بهذا التنسيق:</label>
+      <div class="lst" style="height:90px;margin-top:6px"><div class="on">الاسم الأول اسم العائلة</div><div>اللقب الاسم الأول اسم العائلة</div><div>الاسم الأول</div></div></div>
+      <div class="fs"><span class="lg">معاينة</span><div class="pvbox"></div></div>`,
+    buttons:[{t:'موافق',pr:1,on:()=>insertNodeAtCaret(chip('addr'))},{t:'إلغاء'}],
+    init:d=>{ const row=S.list.rows[included()[0]]||[]; $('.pvbox',d).innerHTML=chipValue(chip('addr'),row)||'—'; $$('.lst div',d).forEach(x=>x.onclick=()=>{ $$('.lst div',d).forEach(y=>y.classList.remove('on')); x.classList.add('on'); }); }});
+}
+/* قاعدة إذا...عندئذ...وإلا */
+function ifDlg(){
+  dialog({title:'إدراج حقل Word: IF',w:620,
+    body:`<div class="row" style="gap:14px;align-items:flex-end"><div>اسم الحقل:<br><select class="f">${S.list.fields.map(f=>`<option>${esc(f)}</option>`).join('')}</select></div>
+      <div>المقارنة:<br><select><option>يساوي</option></select></div><div style="flex:1">المقارنة مع:<br><input type="text" class="v" style="width:100%" value="أنثى"></div></div>
+      <div style="margin-top:10px">إدراج هذا النص:</div><input type="text" class="t" style="width:100%" value="عزيزتي">
+      <div style="margin-top:10px">وإلا، إدراج هذا النص:</div><input type="text" class="e" style="width:100%" value="عزيزي">`,
+    buttons:[{t:'موافق',pr:1,on:d=>insertNodeAtCaret(chip('rule','',{f:$('.f',d).value,v:$('.v',d).value,then:$('.t',d).value,else:$('.e',d).value}))},{t:'إلغاء'}]});
+}
+/* مطابقة الحقول */
+function matchDlg(){
+  const req=['الاسم الأول','اسم العائلة','اللقب','اسم الشركة','سطر العنوان 1','المدينة','عنوان البريد الإلكتروني'];
+  dialog({title:'مطابقة الحقول',w:560,body:`<div style="margin-bottom:8px">تتطلب ميزات الدمج مثل كتلة العنوان وسطر الترحيب معلومات معيّنة. استخدم القوائم لاختيار حقل قائمة المستلمين المناسب لكل عنصر.</div>
+    <div class="grid" style="max-height:300px"><table>${req.map(r=>`<tr><td class="ro" style="width:200px">${r}</td><td class="ro"><select style="width:100%"><option>${S.list.fields.includes(r)?r:'(غير مطابق)'}</option>${S.list.fields.map(f=>`<option>${esc(f)}</option>`).join('')}</select></td></tr>`).join('')}</table></div>`,buttons:[{t:'موافق',pr:1},{t:'إلغاء'}]});
+}
+function findDlg(){
+  dialog({title:'البحث عن إدخال',w:460,body:`<div class="row">بحث:<input type="text" class="q" style="flex:1"></div><div class="fs"><span class="lg">البحث في:</span><label><input type="radio" name="w" checked> جميع الحقول</label></div>`,
+    buttons:[{t:'بحث عن التالي',pr:1,close:false,on:d=>{ const q=$('.q',d).value.trim(); const inc=included(); for(let k=1;k<=inc.length;k++){ const j=(S.rec+k)%inc.length; if(S.list.rows[inc[j]].some(v=>String(v).includes(q))){ goRec(j); return false; } } msgbox('لم يتم العثور على نتائج.'); return false; }},{t:'إغلاق'}],
+    init:d=>setTimeout(()=>$('.q',d).focus(),50)});
+}
+function checkDlg(){
+  dialog({title:'التحقق من الأخطاء ومعالجتها',w:560,body:`<label style="margin:6px 0"><input type="radio" name="c" checked> محاكاة الدمج والإبلاغ عن الأخطاء في مستند جديد.</label><label style="margin:6px 0"><input type="radio" name="c"> إكمال الدمج، مع التوقف مؤقتًا للإبلاغ عن كل خطأ عند حدوثه.</label><label style="margin:6px 0"><input type="radio" name="c"> إكمال الدمج دون التوقف مؤقتًا. الإبلاغ عن الأخطاء في مستند جديد.</label>`,
+    buttons:[{t:'موافق',pr:1,on:()=>setTimeout(()=>msgbox('لم يتم العثور على أخطاء في دمج المراسلات.'),50)},{t:'إلغاء'}]});
+}
+
+/* ==================================================================
+   إنهاء ودمج: مستند جديد / طباعة / بريد إلكتروني
+   ================================================================== */
+function mergedHTML(idxs){
+  return idxs.map(ri=>{ const clone=page.cloneNode(true); clone.removeAttribute('id'); clone.contentEditable='false'; clone.classList.remove('hl','preview');
+    $$('.mf',clone).forEach(el=>{ const s=document.createElement('span'); s.innerHTML=chipValue(el,S.list.rows[ri]); el.replaceWith(s); });
+    return clone.outerHTML; }).join('');
+}
+function pickRecords(title,cb){
+  dialog({title,w:440,body:`<div class="fs"><span class="lg">دمج السجلات</span><label style="margin:4px 0"><input type="radio" name="m" value="all" checked> الكل</label><label style="margin:4px 0"><input type="radio" name="m" value="cur"> السجل الحالي</label>
+    <label style="margin:4px 0"><input type="radio" name="m" value="rng"> من: <input type="text" class="a" style="width:50px"> إلى: <input type="text" class="b" style="width:50px"></label></div>`,
+    buttons:[{t:'موافق',pr:1,on:d=>{ const inc=included(), m=$('input[name=m]:checked',d).value; let idx=inc;
+      if(m==='cur') idx=[inc[S.rec]||inc[0]]; if(m==='rng'){ const a=(+$('.a',d).value||1)-1, b=(+$('.b',d).value||inc.length); idx=inc.slice(a,b); }
+      if(!idx.length) return false; cb(idx); }},{t:'إلغاء'}]});
+}
+function mergeDlg(mode){
+  if(!included().length) return msgbox('لا يوجد مستلمون محددون في القائمة.','⚠️');
+  pickRecords(mode==='edit'?'دمج إلى مستند جديد':'دمج إلى الطابعة',idx=>{
+    mark(10);
+    if(mode==='edit') showMerged(idx);
+    else dialog({title:'طباعة',w:460,body:`<div class="row">الطابعة: <select style="flex:1"><option>Microsoft Print to PDF</option><option>طابعة المدرسة</option></select></div><div style="margin-top:10px">نطاق الصفحات: الكل (${idx.length} صفحات)</div><div class="row" style="margin-top:10px">عدد النسخ: <input type="text" value="1" style="width:50px"></div>`,
+      buttons:[{t:'موافق',pr:1,on:()=>{ $('#printArea').innerHTML=mergedHTML(idx); setTimeout(()=>window.print(),50); }},{t:'إلغاء'}]});
+  });
+}
+let mergedCount=0;
+function showMerged(idx){
+  mergedCount++; const w=$('#merged');
+  w.innerHTML=`<div class="titlebar"><div class="qa"><button>💾</button></div><div class="ttl">الرسائل${mergedCount} - Word</div><div class="search"><div>🔍 بحث</div></div><div class="win"><button>─</button><button>☐</button><button class="cl" id="mClose">✕</button></div></div>
+    <div class="tabs"><button class="file">ملف</button><button class="on">الشريط الرئيسي</button><button>إدراج</button><button>تصميم</button><button>تخطيط</button><button>مراجع</button><button>مراسلات</button><button>مراجعة</button><button>عرض</button>
+      <div class="rt"><span style="background:#185ABD;color:#fff" id="mPrint">🖨️ طباعة</span><span id="mBack" style="cursor:pointer">↩ العودة إلى المستند الرئيسي</span></div></div>
+    <div class="mcanvas"><div style="zoom:var(--z)">${idx.map((ri,k)=>`<div style="margin-bottom:20px">${mergedHTML([ri])}</div>`).join('')}</div></div>
+    <div class="status"><span>الصفحة 1 من ${idx.length}</span><span>تم دمج ${idx.length} رسائل</span><span class="sp"></span></div>`;
+  w.classList.add('show'); $('#mClose').onclick=$('#mBack').onclick=()=>w.classList.remove('show');
+  $('#mPrint').onclick=()=>{ $('#printArea').innerHTML=mergedHTML(idx); setTimeout(()=>window.print(),50); };
+  toast(`تم إنشاء مستند جديد يحتوي على ${idx.length} رسائل`);
+}
+function emailDlg(){
+  const L=S.list; const em=L.fields.find(f=>/بريد/.test(f));
+  if(!em) return msgbox('يتعذر تنفيذ الدمج إلى البريد الإلكتروني لأنه لم يتم العثور على حقل عنوان البريد الإلكتروني في قائمة المستلمين.<br>أضيفي حقل «عنوان البريد الإلكتروني» من «تخصيص أعمدة».','⚠️');
+  dialog({title:'دمج إلى البريد الإلكتروني',w:520,body:`<div class="fs"><span class="lg">خيارات الرسالة</span><div class="row" style="margin:4px 0">إلى: <select style="flex:1">${L.fields.map(f=>`<option ${f===em?'selected':''}>${esc(f)}</option>`).join('')}</select></div>
+    <div class="row" style="margin:4px 0">سطر الموضوع: <input type="text" class="sub" style="flex:1" value="دعوة لحضور الاجتماع السنوي"></div><div class="row" style="margin:4px 0">تنسيق البريد: <select style="flex:1"><option>HTML</option><option>نص عادي</option></select></div></div>`,
+    buttons:[{t:'موافق',pr:1,on:d=>{ const sub=$('.sub',d).value, inc=included(); mark(10);
+      setTimeout(()=>dialog({title:'صندوق الصادر (محاكاة)',w:640,body:`<div class="grid" style="max-height:320px"><table><tr><th>إلى</th><th>الموضوع</th><th>الحالة</th></tr>${inc.map(i=>`<tr><td class="ro">${esc(L.rows[i][L.fields.indexOf(em)]||'(فارغ)')}</td><td class="ro">${esc(sub)}</td><td class="ro">✔ تم الإرسال</td></tr>`).join('')}</table></div>`,buttons:[{t:'إغلاق',pr:1}]}),50); }},{t:'إلغاء'}]});
+}
+/* مغلفات وتسميات */
+function envDlg(tab){
+  const row=S.list?S.list.rows[included()[0]]:null; const nm=row?`${rowVal('الاسم الأول',row)} ${rowVal('اسم العائلة',row)}`:'';
+  dialog({title:'مغلفات وتسميات',w:620,body:`<div class="row" style="border-bottom:1px solid #ddd;margin-bottom:10px"><b style="padding:4px 10px;border-bottom:2px solid #185ABD">${tab==='env'?'مغلفات':'تسميات'}</b></div>
+    <div>عنوان ${tab==='env'?'التسليم':'التسمية'}:</div><textarea style="width:100%;height:80px;font-family:inherit">${esc(nm||'سارة العتيبي\nالرياض')}</textarea>
+    ${tab==='env'?'<div style="margin-top:8px">عنوان الإرجاع:</div><textarea style="width:100%;height:60px;font-family:inherit">مدارس مناهل البكيرية</textarea>':''}
+    <div class="fs"><span class="lg">معاينة</span><div style="height:90px;border:1px solid #999;position:relative;background:#fff">${tab==='env'?'<span style="position:absolute;top:8px;right:10px;font-size:11px">المرسل</span><span style="position:absolute;top:40%;left:40%">المستلم</span><span style="position:absolute;top:6px;left:8px;border:1px solid #999;width:30px;height:36px"></span>':'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:6px">'+'<div style="border:1px dashed #999;height:22px"></div>'.repeat(9)+'</div>'}</div></div>`,
+    buttons:[{t:'إضافة إلى المستند',pr:1,on:d=>{ const t=$('textarea',d).value; page.insertAdjacentHTML('afterbegin',`<p style="border:1px dashed #999;padding:8px">${esc(t).replace(/\n/g,'<br>')}</p>`); updWords(); }},{t:'إلغاء'}]});
+}
+
+/* ==================================================================
+   معالج دمج المراسلات (لوحة المهام) — ٦ خطوات
+   ================================================================== */
+function openWizard(){ S.wizard=true; S.step=S.docType==='normal'?1:Math.max(S.step,1); $('#pane').style.display='flex'; mark(1); drawPane(); }
+function closeWizard(){ S.wizard=false; $('#pane').style.display='none'; }
+const rad=(g,v,t,cur)=>`<div class="rad ${cur===v?'on':''}" data-g="${g}" data-v="${v}"><i></i>${t}</div>`;
+function drawPane(){
+  const P=$('#pane'), st=S.step; let b='', next='', prev='', canNext=true;
+  if(st===1){
+    b=`<h4>تحديد نوع المستند</h4><div>ما نوع المستند الذي تعمل عليه؟</div><div style="margin:8px 0">${Object.entries(DOC_TYPES).filter(([k])=>k!=='normal').map(([k,t])=>rad('type',k,t,S.wizType)).join('')}</div><hr>
+      <h4>${DOC_TYPES[S.wizType]}</h4><div>${{letters:'إرسال رسائل إلى مجموعة من الأشخاص. يمكنك تخصيص الرسالة التي يتلقاها كل شخص.',email:'إرسال رسائل بريد إلكتروني إلى مجموعة من الأشخاص.',envelopes:'طباعة مغلفات موجّهة لإرسالها بالبريد إلى مجموعة.',labels:'طباعة تسميات عناوين لإرسالها بالبريد إلى مجموعة.',directory:'إنشاء مستند واحد يحتوي على كتالوج أو قائمة مطبوعة بالعناوين.'}[S.wizType]}</div>
+      <div style="margin-top:8px">انقر فوق «التالي» للمتابعة.</div>`;
+    next='التالي: مستند البداية';
+  } else if(st===2){
+    b=`<h4>تحديد مستند البداية</h4><div>كيف تريد إعداد رسائلك؟</div><div style="margin:8px 0">${rad('start','current','استخدام المستند الحالي',S.wizStart)}${rad('start','tpl','البدء من قالب',S.wizStart)}${rad('start','exist','البدء من مستند موجود',S.wizStart)}</div><hr>
+      <h4>${{current:'استخدام المستند الحالي',tpl:'البدء من قالب',exist:'البدء من مستند موجود'}[S.wizStart]}</h4><div>${{current:'ابدأ من المستند المعروض هنا واستخدم معالج دمج المراسلات لإضافة معلومات المستلم.',tpl:'ابدأ بقالب دمج مراسلات جاهز للاستخدام يمكنك تخصيصه لاحتياجاتك.',exist:'ابدأ بمستند دمج مراسلات موجود وقم بإجراء تغييرات على المحتويات أو المستلمين.'}[S.wizStart]}</div>
+      ${S.wizStart!=='current'?'<div style="margin-top:8px" class="lnk" data-a="tpl">📄 تحديد '+(S.wizStart==='tpl'?'قالب':'مستند')+'...</div>':''}`;
+    next='التالي: تحديد المستلمين'; prev='السابق: تحديد نوع المستند';
+  } else if(st===3){
+    const has=!!S.list;
+    b=`<h4>تحديد المستلمين</h4><div style="margin:8px 0">${rad('rec','existing','استخدام قائمة موجودة',S.wizRec)}${rad('rec','outlook','التحديد من جهات اتصال Outlook',S.wizRec)}${rad('rec','new','كتابة قائمة جديدة',S.wizRec)}</div><hr>`;
+    if(S.wizRec==='new') b+=`<h4>كتابة قائمة جديدة</h4><div>اكتب أسماء وعناوين المستلمين.</div><div style="margin-top:6px"><span class="lnk" data-a="create">📋 إنشاء...</span></div>`;
+    if(S.wizRec==='existing') b+=`<h4>استخدام قائمة موجودة</h4>${has?`<div>حاليًا، يتم تحديد المستلمين من:</div><div style="margin:4px 0">🗂️ [${esc(S.list.name)}]</div><div><span class="lnk" data-a="browse">📂 تحديد قائمة مختلفة...</span></div><div><span class="lnk" data-a="editlist">✏️ تحرير قائمة المستلمين...</span></div>`:`<div>استخدم أسماء وعناوين من ملف أو قاعدة بيانات.</div><div style="margin-top:6px"><span class="lnk" data-a="browse">📂 استعراض...</span></div><div><span class="lnk dis">✏️ تحرير قائمة المستلمين...</span></div>`}`;
+    if(S.wizRec==='outlook') b+=`<h4>التحديد من جهات اتصال Outlook</h4><div>استخدم الأسماء والعناوين من مجلد جهات اتصال Outlook.</div><div style="margin-top:6px"><span class="lnk" data-a="outlook">📇 اختيار مجلد جهات الاتصال...</span></div>`;
+    next='التالي: كتابة الرسالة'; prev='السابق: مستند البداية'; canNext=has;
+  } else if(st===4){
+    b=`<h4>كتابة الرسالة</h4><div>إذا لم تقم بذلك بعد، فاكتب رسالتك الآن.</div><div style="margin-top:6px">لإضافة معلومات المستلم إلى رسالتك، انقر فوق موقع في المستند، ثم انقر فوق أحد العناصر أدناه.</div>
+      <div style="margin:10px 0;display:flex;flex-direction:column;gap:6px"><span class="lnk" data-a="addr">📇 كتلة العنوان...</span><span class="lnk" data-a="greet">👋 سطر الترحيب...</span><span class="lnk dis">📮 بطاقات بريدية إلكترونية...</span><span class="lnk" data-a="more">«» عناصر إضافية...</span></div>
+      <div>عند الانتهاء من كتابة الرسالة، انقر فوق «التالي». يمكنك بعد ذلك معاينة رسالة كل مستلم وتخصيصها.</div>
+      <div style="margin-top:10px;padding:8px;background:#FFF4CE;border-radius:4px">💡 انقري في المستند بعد «إلى:» ثم اختاري «عناصر إضافية...» لإدراج «الاسم الأول» و«اسم العائلة»، وبعد «الصف:» لإدراج «الصف».</div>`;
+    next='التالي: معاينة الرسائل'; prev='السابق: تحديد المستلمين';
+  } else if(st===5){
+    const n=included().length;
+    b=`<h4>معاينة الرسائل</h4><div>تمت معاينة إحدى الرسائل المدمجة هنا. لمعاينة رسالة أخرى، انقر فوق أحد الأزرار التالية:</div>
+      <div class="rec"><button data-a="prev">«</button><span>المستلم: ${S.rec+1}</span><button data-a="next">»</button></div>
+      <div><span class="lnk" data-a="find">🔍 بحث عن مستلم...</span></div><hr><h4>إجراء التغييرات</h4><div>يمكنك أيضًا تغيير قائمة المستلمين:</div>
+      <div><span class="lnk" data-a="editlist">✏️ تحرير قائمة المستلمين...</span></div><div><span class="lnk ${n<=1?'dis':''}" data-a="exclude">🚫 استبعاد هذا المستلم</span></div>
+      <div style="margin-top:8px">عند الانتهاء من معاينة الرسائل، انقر فوق «التالي». يمكنك بعد ذلك طباعة الرسائل المدمجة أو تحرير رسائل فردية لإضافة تعليقات شخصية.</div>`;
+    next='التالي: إكمال الدمج'; prev='السابق: كتابة الرسالة';
+  } else if(st===6){
+    b=`<h4>إكمال الدمج</h4><div>Word جاهز لإنشاء رسائلك.</div><div style="margin-top:6px">لتخصيص رسائلك، انقر فوق «تحرير رسائل فردية». سيفتح هذا مستندًا جديدًا بالرسائل المدمجة. لإجراء تغييرات على جميع الرسائل، قم بالتبديل مرة أخرى إلى المستند الأصلي.</div>
+      <hr><h4>دمج</h4><div style="display:flex;flex-direction:column;gap:8px;margin-top:6px"><span class="lnk" data-a="print">🖨️ طباعة...</span><span class="lnk" data-a="indiv">✏️ تحرير رسائل فردية...</span></div>`;
+    prev='السابق: معاينة الرسائل';
+  }
+  P.innerHTML=`<div class="ph"><span>دمج المراسلات</span><button onclick="closeWizard()">✕</button></div><div class="pb">${b}</div>
+    <div class="pf"><span class="st">الخطوة ${st} من 6</span>${next?`<span class="lnk ${canNext?'':'dis'}" data-a="nextstep">→ ${next}</span>`:''}${prev?`<span class="lnk" data-a="prevstep">← ${prev}</span>`:''}</div>`;
+  $$('.rad',P).forEach(r=>r.onclick=()=>{ const g=r.dataset.g, v=r.dataset.v;
+    if(g==='type') S.wizType=v; if(g==='start') S.wizStart=v; if(g==='rec') S.wizRec=v; drawPane(); });
+  const A={
+    nextstep(){ if(st===1){ S.docType=S.wizType; if(S.wizType==='letters') mark(2); drawRibbon(); }
+      if(st===2){ if(S.wizStart==='current') mark(3); }
+      if(st===3&&!S.list) return;
+      if(st===4){ setPreview(true); }
+      S.step=Math.min(6,st+1); drawPane(); },
+    prevstep(){ if(st===5) setPreview(false); S.step=Math.max(1,st-1); drawPane(); },
+    create(){ mark(4); newList(); }, browse(){ useExisting(); }, editlist(){ recipientsDlg(); }, outlook(){ outlook(); },
+    tpl(){ msgbox('في هذا الدرس نستخدم «استخدام المستند الحالي» ✔'); },
+    addr(){ addressBlockDlg(); }, greet(){ greetingDlg(); },
+    more(){ insertFieldDlg(); },
+    prev(){ goRec(S.rec-1); }, next(){ goRec(S.rec+1); }, find(){ findDlg(); },
+    exclude(){ const inc=included(); if(inc.length<=1) return; S.list.inc[inc[S.rec]]=false; S.rec=Math.min(S.rec,included().length-1); renderFields(); drawPane(); toast('تم استبعاد المستلم من الدمج'); },
+    print(){ mergeDlg('print'); }, indiv(){ mergeDlg('edit'); }
+  };
+  $$('[data-a]',P).forEach(x=>x.onclick=()=>{ if(!x.classList.contains('dis')) A[x.dataset.a]&&A[x.dataset.a](); });
+}
+/* إدراج حقل دمج (عناصر إضافية) */
+function insertFieldDlg(){
+  let sel=0;
+  dialog({title:'إدراج حقل دمج',w:440,body:`<div class="row" style="gap:20px;margin-bottom:6px"><span>إدراج:</span><label><input type="radio" name="t"> عناوين</label><label><input type="radio" name="t" checked> حقول قاعدة البيانات</label></div>
+    <div>الحقول:</div><div class="lst" style="height:220px"></div>`,
+    buttons:[{t:'إدراج',pr:1,close:false,on:()=>{ insertField(S.list.fields[sel]); return false; }},{t:'إغلاق'}],
+    init:d=>{ const draw=()=>{ $('.lst',d).innerHTML=S.list.fields.map((f,i)=>`<div class="${i===sel?'on':''}" data-i="${i}">${esc(f)}</div>`).join(''); $$('.lst div',d).forEach(x=>{ x.onclick=()=>{ sel=+x.dataset.i; draw(); }; x.ondblclick=()=>insertField(S.list.fields[+x.dataset.i]); }); }; draw(); }});
+}
+
+/* ==================================================================
+   ملف (Backstage)
+   ================================================================== */
+function openBackstage(){
+  const B=$('#backstage');
+  B.innerHTML=`<div class="bl"><button id="bsBack" style="font-size:20px">➔</button><button data-v="home">🏠 الصفحة الرئيسية</button><button data-v="new">📄 جديد</button><button data-v="save">💾 حفظ</button><button data-v="print">🖨️ طباعة</button><button data-v="close">✕ إغلاق</button></div>
+    <div class="br"><h1>صباح الخير</h1><div class="tiles">
+      <div class="tile" data-n="blank"><div>📄</div>مستند فارغ</div><div class="tile" data-n="invite"><div>🏛️</div>دعوة المتحف الوطني</div><div class="tile" data-n="cert"><div>🏅</div>شهادة تقدير</div></div>
+      <div style="margin-top:30px;color:#605E5C">💡 «دعوة المتحف الوطني» هو مثال كتاب الطالبة لدرس دمج المراسلات.</div></div>`;
+  B.classList.add('show');
+  $('#bsBack').onclick=()=>B.classList.remove('show');
+  $$('.tile',B).forEach(t=>t.onclick=()=>{ newDoc(t.dataset.n); B.classList.remove('show'); });
+  $$('.bl [data-v]',B).forEach(b=>b.onclick=()=>{ const v=b.dataset.v;
+    if(v==='save'){ LS.set('wordsim-doc',page.innerHTML); toast('تم حفظ المستند'); B.classList.remove('show'); }
+    if(v==='print'){ $('#printArea').innerHTML=`<div class="page">${page.innerHTML}</div>`; B.classList.remove('show'); setTimeout(()=>window.print(),50); }
+    if(v==='close'){ B.classList.remove('show'); toast('هذا محاكي تعليمي 🙂'); } });
+}
+function newDoc(k){
+  S.preview=false; S.list=null; S.docType='normal'; S.step=1; closeWizard(); page.classList.remove('preview','hl'); page.contentEditable='true';
+  page.innerHTML=k==='blank'?'<p><br></p>':k==='cert'?'<p style="text-align:center;font-size:28px"><b>شهادة تقدير</b></p><p style="text-align:center">تتقدم إدارة المدرسة بالشكر والتقدير للطالبة: </p><p style="text-align:center">الصف: </p><p style="text-align:center">لتميّزها في مادة المهارات الرقمية، متمنين لها دوام التوفيق.</p><p><br></p>':DEFAULT_DOC;
+  drawRibbon(); updWords();
+}
+
+/* ==================================================================
+   شريط الحالة واختصارات عامة
+   ================================================================== */
+function updWords(){ const t=page.innerText.replace(/[​]/g,'').trim(); const n=t?t.split(/\s+/).length:0; $('#stWords').textContent=`${n} كلمة`; }
+page.addEventListener('input',updWords);
+$$('.titlebar [data-cmd]').forEach(b=>b.onclick=()=>{ const c=b.dataset.cmd; if(c==='save'){ LS.set('wordsim-doc',page.innerHTML); toast('تم حفظ المستند'); } else { page.focus(); document.execCommand(c); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ const m=$$('.mask'); if(m.length) m[m.length-1].remove(); closeMenus(); } if(e.ctrlKey&&e.key.toLowerCase()==='s'){ e.preventDefault(); LS.set('wordsim-doc',page.innerHTML); toast('تم حفظ المستند'); } });
+
+drawTabs(); drawRibbon(); updWords();
+
+/* ==================================================================
+   🏆 وضع التحدي بين المجموعات
+   ================================================================== */
+const CH={on:false,name:'',total:600,left:600,start:0,timer:null};
+const arN=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const mmss=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+function chalProgress(){ if(CH.on) $('#chSteps').textContent=arN(done.size)+'/'+arN(COACH.length); }
+function openChallenge(){
+  const hist=LS.get('wordsim-results',[]);
+  $('#ccard').innerHTML=`<h1>🏆 تحدي دمج المراسلات</h1><div style="color:#605E5C">تنافسي مع مجموعتكِ… من تُنجز الدمج بدقة وأسرع؟</div>
+    <div class="task"><b>🎯 المهمة:</b> أرسلن دعوة «الاجتماع السنوي في المتحف الوطني» إلى <b>${arN(CH_MIN_ROWS)} زميلات على الأقل</b> باستخدام دمج المراسلات:
+      <ul style="margin:8px 22px 0">
+        <li>قائمة مستلمات جديدة فيها الحقول فقط: <b>الاسم الأول، اسم العائلة، الصف</b>.</li>
+        <li>احفظن القائمة في مجلد <b>المستندات</b>.</li>
+        <li>أدرجن الحقول بعد «إلى:» و«الصف:» في الدعوة.</li>
+        <li>عايِنّ الرسائل، ثم أتممن الدمج بـ <b>تحرير رسائل فردية</b>.</li></ul></div>
+    <div class="row"><b style="width:130px">اسم المجموعة:</b><input id="cgName" style="flex:1" placeholder="مثال: المتفوقات 🌟" value="${esc(CH.name)}"></div>
+    <div class="row"><b style="width:130px">مدة التحدي:</b><select id="cgTime">${[5,8,10,12,15].map(m=>`<option value="${m}" ${m===10?'selected':''}>${arN(m)} دقائق</option>`).join('')}</select>
+      <span style="color:#605E5C;font-size:14px">النقاط: ١٠ لكل خطوة صحيحة + مكافأة سرعة عند الإنجاز الكامل</span></div>
+    <div class="row" style="margin-top:18px"><button class="go" id="cgGo">ابدأن التحدي 🚀</button><button class="ghost" id="cgX">إلغاء</button></div>
+    ${hist.length?`<h3 style="margin-top:18px">📊 نتائج سابقة على هذا الجهاز</h3>${histTable(hist)}<button class="ghost" id="cgClr" style="margin-top:8px;font-size:13px;padding:6px 14px">مسح النتائج</button>`:''}`;
+  $('#cscr').classList.add('show');
+  $('#cgX').onclick=()=>$('#cscr').classList.remove('show');
+  const clr=$('#cgClr'); if(clr) clr.onclick=()=>{ LS.set('wordsim-results',[]); openChallenge(); };
+  $('#cgGo').onclick=()=>{ const n=$('#cgName').value.trim(); if(!n){ $('#cgName').focus(); $('#cgName').style.borderColor='#C42B1C'; return; }
+    startChallenge(n,+$('#cgTime').value*60); };
+}
+function histTable(h){ return `<table class="hist"><tr><th>المجموعة</th><th>الخطوات</th><th>الوقت</th><th>النقاط</th><th>الوقت والتاريخ</th></tr>${h.slice(-8).reverse().map(r=>`<tr><td>${esc(r.name)}</td><td>${arN(r.steps)}/${arN(r.of)}</td><td>${arN(mmss(r.used))}</td><td><b>${arN(r.score)}</b></td><td>${esc(r.at)}</td></tr>`).join('')}</table>`; }
+function startChallenge(name,secs){
+  CH.on=true; CH.name=name; CH.total=secs; CH.left=secs; CH.start=Date.now();
+  done.clear(); drawCoach(); newDoc('invite'); S.tab='home'; drawTabs(); drawRibbon();
+  $$('.mask').forEach(m=>m.remove()); $('#merged').classList.remove('show'); $('#coach').classList.remove('show');
+  $('#coachBtn').style.display='none'; $('#chalBtn').style.display='none';
+  $('#chName').textContent=name; chalProgress(); $('#chal').classList.add('show'); $('#cscr').classList.remove('show');
+  const tick=()=>{ CH.left=Math.max(0,CH.total-Math.floor((Date.now()-CH.start)/1000)); $('#chTime').textContent=mmss(CH.left); $('#chal').classList.toggle('low',CH.left<=60);
+    if(CH.left<=0) finishChallenge('time'); };
+  clearInterval(CH.timer); CH.timer=setInterval(tick,500); tick();
+  toast(`انطلق التحدي! بالتوفيق يا ${name} 🚀`);
+}
+function finishChallenge(why){
+  if(!CH.on) return; CH.on=false; clearInterval(CH.timer);
+  const used=Math.min(CH.total,Math.round((Date.now()-CH.start)/1000)), steps=done.size, of=COACH.length, all=steps===of;
+  const bonus=all?Math.floor((CH.total-used)/10):0, score=steps*10+bonus;
+  const at=new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit'})+' • '+new Date().toLocaleDateString('ar-SA');
+  const hist=LS.get('wordsim-results',[]); hist.push({name:CH.name,steps,of,used,score,at}); LS.set('wordsim-results',hist);
+  $('#chal').classList.remove('show'); $('#coachBtn').style.display=''; $('#chalBtn').style.display='';
+  const stars='⭐'.repeat(Math.max(1,Math.round(steps/of*5)));
+  $('#ccard').innerHTML=`<h1>${why==='time'?'⏰ انتهى الوقت!':all?'🎉 أحسنتنّ! أنجزتنّ التحدي':'🏁 انتهى التحدي'}</h1>
+    <div style="font-size:22px;font-weight:700">مجموعة: ${esc(CH.name)} <span style="font-size:28px">${stars}</span></div>
+    <div class="score"><div>الخطوات المكتملة<b>${arN(steps)} / ${arN(of)}</b></div><div>الوقت المستغرق<b>${arN(mmss(used))}</b></div><div>النقاط<b>${arN(score)}</b></div></div>
+    ${bonus?`<div style="color:#107C10;font-weight:700">⚡ مكافأة السرعة: +${arN(bonus)} نقطة</div>`:''}
+    <div class="clist">${COACH.map((t,i)=>`<div>${done.has(i)?'✅':'❌'} ${t}</div>`).join('')}</div>
+    <h3 style="margin-top:12px">📊 نتائج المجموعات على هذا الجهاز</h3>${histTable(hist)}
+    <div class="row" style="margin-top:18px"><button class="go" id="cgView">📄 عرض عمل المجموعة</button><button class="ghost" id="cgNew">🏆 تحدٍّ جديد</button></div>`;
+  $('#cscr').classList.add('show');
+  $('#cgView').onclick=()=>$('#cscr').classList.remove('show'); $('#cgNew').onclick=()=>openChallenge();
+  if(steps>=of*0.6) confetti2();
+}
+function confetti2(){ const c=['#185ABD','#107C10','#F2C661','#C42B1C','#6D28D9'];
+  for(let i=0;i<70;i++){ const d=document.createElement('div'); d.className='conf2'; d.style.background=c[i%5]; d.style.left=Math.random()*AW+'px'; d.style.top='-20px'; app.appendChild(d);
+    d.animate([{transform:'translate(0,0) rotate(0)'},{transform:`translate(${(Math.random()-.5)*200}px,${AH+40}px) rotate(${Math.random()*720}deg)`}],{duration:1800+Math.random()*1400,easing:'cubic-bezier(.3,.6,.4,1)',fill:'forwards'}).onfinish=()=>d.remove(); } }
+if(/challenge/.test(location.search+location.hash)) setTimeout(openChallenge,300);
+</script>
+</body>
+</html>

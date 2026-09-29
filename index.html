@@ -1,0 +1,2657 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دمج المراسلات | عرض تفاعلي</title>
+<!-- خط عربي واضح (إذا لم يتوفر إنترنت يعمل العرض بخط النظام تلقائيًا) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+/* =========================================================
+   1) الألوان والمتغيرات العامة
+   ========================================================= */
+:root{
+  --p:#7C3AED; --p2:#6D28D9; --p3:#A78BFA; --pl:#EDE9FE; --pll:#F8F6FF;
+  --ink:#2E1065; --txt:#3F3A56; --muted:#7A7394;
+  --mint:#0FB5A6; --mintl:#D5F7F2; --gold:#F5A524; --goldl:#FEF3D6;
+  --pink:#EC4899; --pinkl:#FCE7F3; --ok:#10B981; --okl:#D1FAE5; --bad:#F43F5E; --badl:#FFE4E8;
+  --word:#2B579A;
+  --shadow:0 24px 60px -24px rgba(76,29,149,.35);
+  --shadow-s:0 10px 26px -12px rgba(76,29,149,.35);
+  --font:'Tajawal','Segoe UI','Tahoma','Arial',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#E9E3FB;font-family:var(--font);color:var(--txt);-webkit-user-select:none;user-select:none}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input{font-family:inherit}
+
+/* =========================================================
+   2) المسرح الثابت 1920×1080 (16:9) يتم تكبيره/تصغيره ليملأ الشاشة
+   ========================================================= */
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;overflow:hidden;
+  background:radial-gradient(1200px 700px at 100% 0%,#F1EBFF 0%,transparent 60%),
+             radial-gradient(900px 600px at 0% 100%,#E6FBF7 0%,transparent 60%),#FBFAFF;}
+.blob{position:absolute;border-radius:50%;filter:blur(2px);opacity:.55;pointer-events:none}
+.blob.b1{width:520px;height:520px;background:radial-gradient(circle,#DDD2FF,transparent 70%);top:-160px;left:-140px;animation:float 14s ease-in-out infinite}
+.blob.b2{width:420px;height:420px;background:radial-gradient(circle,#CFF5EE,transparent 70%);bottom:-120px;right:-80px;animation:float 16s ease-in-out infinite reverse}
+.blob.b3{width:260px;height:260px;background:radial-gradient(circle,#FFE7C2,transparent 70%);top:40%;right:6%;animation:float 18s ease-in-out infinite}
+@keyframes float{50%{transform:translate(30px,-25px)}}
+
+/* شريط التقدم أعلى الشاشة */
+#progress{position:absolute;top:0;right:0;height:8px;background:linear-gradient(90deg,var(--mint),var(--p));transition:width .6s ease;z-index:30;border-radius:0 0 0 8px}
+
+/* =========================================================
+   3) الشرائح وحركات الانتقال (Fade / Slide / Zoom)
+   ========================================================= */
+.slide{position:absolute;inset:0;padding:64px 110px 150px;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:var(--from);
+  transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1),visibility 0s linear .7s}
+.slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .6s ease,transform .7s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.slide[data-trans="fade"]{--from:none}
+.slide[data-trans="zoom"]{--from:scale(.92)}
+#stage[data-dir="next"] .slide[data-trans="slide"]{--from:translateX(-90px)}
+#stage[data-dir="prev"] .slide[data-trans="slide"]{--from:translateX(90px)}
+
+/* ظهور العناصر بالتتابع: أي عنصر يحمل class="a" وله --i */
+.a{opacity:0}
+.slide.active .a{animation:rise .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0) * 110ms + 180ms)}
+/* نستخدم translate وليس transform حتى تبقى تأثيرات Hover والتموضع تعمل */
+@keyframes rise{from{opacity:0;translate:0 28px}to{opacity:1;translate:0 0}}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+@keyframes bob{50%{transform:translateY(-12px)}}
+@keyframes wiggle{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+.shake{animation:shake .45s ease}
+.bob{display:inline-block;animation:bob 3s ease-in-out infinite}
+
+/* =========================================================
+   4) عناصر مشتركة: الشارة، العناوين، البطاقات، الأزرار
+   ========================================================= */
+.chip{align-self:flex-start;display:inline-flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--pl);
+  color:var(--p2);font-weight:800;font-size:28px;padding:10px 26px;border-radius:999px;box-shadow:var(--shadow-s);margin-bottom:18px}
+.chip .dot{width:12px;height:12px;border-radius:50%;background:var(--mint)}
+.h{font-size:68px;font-weight:900;color:var(--ink);line-height:1.25;margin-bottom:28px}
+.h .hl{color:var(--p);position:relative}
+.sub{font-size:36px;color:var(--muted);font-weight:500;line-height:1.6}
+.card{background:#fff;border-radius:32px;box-shadow:var(--shadow);padding:36px 40px;border:2px solid #F0ECFF}
+.row{display:flex;gap:32px}
+.grow{flex:1}
+.center{display:flex;align-items:center;justify-content:center}
+.col{display:flex;flex-direction:column}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:12px;font-size:32px;font-weight:800;padding:18px 38px;border-radius:22px;
+  background:var(--p);color:#fff;box-shadow:0 12px 24px -10px rgba(124,58,237,.7);transition:transform .15s,box-shadow .2s,background .2s}
+.btn:hover{transform:translateY(-3px);box-shadow:0 16px 30px -10px rgba(124,58,237,.8);background:var(--p2)}
+.btn:active{transform:scale(.95)}
+.btn.soft{background:var(--pl);color:var(--p2);box-shadow:none}
+.btn.soft:hover{background:#E1D8FF}
+.btn.mint{background:var(--mint);box-shadow:0 12px 24px -10px rgba(15,181,166,.7)}
+.btn.gold{background:var(--gold);box-shadow:0 12px 24px -10px rgba(245,165,36,.7)}
+.btn.ghost{background:#fff;color:var(--p2);border:2px solid var(--pl);box-shadow:var(--shadow-s)}
+.btn.big{font-size:40px;padding:24px 56px;border-radius:28px}
+.btn.sm{font-size:26px;padding:12px 24px;border-radius:16px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+
+/* عناصر تظهر عند الضغط */
+.reveal{opacity:0;transform:scale(.92);transition:all .5s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.reveal.shown{opacity:1;transform:none;pointer-events:auto}
+
+/* رسائل التغذية الراجعة */
+.feedback{min-height:84px;font-size:38px;font-weight:800;display:flex;align-items:center;justify-content:center;gap:14px;border-radius:24px;transition:all .3s}
+.feedback.ok{background:var(--okl);color:#047857;animation:pop .45s}
+.feedback.no{background:#F3E8FF;color:var(--p2);animation:pop .45s}
+.note{background:var(--goldl);border-right:10px solid var(--gold);border-radius:22px;padding:22px 30px;font-size:30px;color:#7A4A00;font-weight:600;line-height:1.6}
+
+/* المؤقت */
+.timer{display:flex;align-items:center;gap:18px}
+.t-ring{position:relative;width:150px;height:150px}
+.t-ring svg{transform:rotate(-90deg)}
+.t-ring .t-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:900;color:var(--ink);direction:ltr}
+.timer.low .t-num{color:var(--bad)}
+.timer.low .t-bar{stroke:var(--bad)}
+.t-bar{transition:stroke-dashoffset 1s linear,stroke .3s}
+
+/* =========================================================
+   5) تصاميم الشرائح حسب النوع
+   ========================================================= */
+/* ترحيب */
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:22px}
+.hero .emoji{font-size:150px;line-height:1}
+.hero h1{font-size:110px;font-weight:900;color:var(--ink);line-height:1.2}
+.hero h1 span{background:linear-gradient(90deg,var(--p),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .meta{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+.pill{background:#fff;border:2px solid var(--pl);border-radius:999px;padding:12px 28px;font-size:30px;font-weight:700;color:var(--p2);box-shadow:var(--shadow-s)}
+.deco{position:absolute;font-size:70px;opacity:.9;pointer-events:none}
+
+/* التحضير */
+.prep-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+.info{text-align:center;padding:30px 20px}
+.info .ic{font-size:64px}
+.info .lb{font-size:28px;color:var(--muted);font-weight:700;margin-top:8px}
+.info .vl{font-size:40px;color:var(--ink);font-weight:900;margin-top:8px;outline:none;border-radius:12px;padding:2px 8px}
+.info .vl[contenteditable]:hover{background:var(--pll)}
+.counter{display:flex;align-items:center;gap:22px;justify-content:center}
+.counter button{width:70px;height:70px;border-radius:50%;background:var(--pl);color:var(--p2);font-size:44px;font-weight:900;transition:transform .15s}
+.counter button:hover{transform:scale(1.1)}
+.counter .num{font-size:72px;font-weight:900;color:var(--p);min-width:120px;text-align:center}
+.rules{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.rule{background:#fff;border-radius:26px;padding:12px 22px;display:flex;align-items:center;gap:16px;font-size:30px;font-weight:700;box-shadow:var(--shadow-s);border:2px solid #F0ECFF}
+.rule .e{font-size:50px}
+
+/* بطاقات قابلة للقلب */
+.flip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+.flip{perspective:1400px;height:300px;cursor:pointer}
+.flip-in{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.2,.8,.2,1);transform-style:preserve-3d}
+.flip.flipped .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:30px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:26px;gap:12px}
+.face.front{background:#fff;border:3px solid var(--pl);box-shadow:var(--shadow)}
+.face.front .q{font-size:32px;font-weight:800;color:var(--ink);line-height:1.5}
+.face.front .n{font-size:54px}
+.face.back{background:linear-gradient(135deg,var(--p),#9F67FF);color:#fff;transform:rotateY(180deg);font-size:34px;font-weight:800;line-height:1.5;box-shadow:var(--shadow)}
+.flip:hover .face.front{border-color:var(--p3)}
+.tap{font-size:22px;color:var(--muted);font-weight:600}
+.link-box{display:flex;align-items:center;gap:26px;background:linear-gradient(90deg,#fff,var(--mintl));border-radius:30px;padding:26px 36px;border:2px solid #BDEFE7}
+.link-box .e{font-size:64px}
+.link-box p{font-size:34px;font-weight:700;color:#115E59;line-height:1.6}
+
+/* التهيئة - تصويت */
+.scenario{display:flex;gap:30px;align-items:center}
+.scenario .who{font-size:120px}
+.scenario p{font-size:38px;line-height:1.7;font-weight:600;color:var(--ink)}
+.scenario b{color:var(--p)}
+.votes{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+.vote{position:relative;background:#fff;border:3px solid var(--pl);border-radius:30px;padding:30px;text-align:center;box-shadow:var(--shadow-s);transition:transform .15s,border-color .2s}
+.vote:hover{transform:translateY(-5px);border-color:var(--p3)}
+.vote:active{transform:scale(.97)}
+.vote .e{font-size:70px}
+.vote .t{font-size:32px;font-weight:800;color:var(--ink);margin-top:10px;line-height:1.4}
+.vote .s{font-size:24px;color:var(--muted);margin-top:8px}
+.vote .cnt{position:absolute;top:-18px;left:-18px;min-width:64px;height:64px;border-radius:32px;background:var(--p);color:#fff;font-size:32px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 12px;box-shadow:var(--shadow-s)}
+.vote .cnt.bump{animation:pop .35s}
+.big-reveal{font-size:44px;font-weight:900;color:#fff;background:linear-gradient(90deg,var(--p),var(--pink));border-radius:30px;padding:26px 40px;text-align:center}
+
+/* الرسائل / المستند */
+.letter{background:#fff;border-radius:18px;box-shadow:0 14px 34px -16px rgba(46,16,101,.4);padding:30px 36px;font-size:27px;line-height:1.75;color:#222;border-top:10px solid var(--p3);position:relative}
+.letter .fld{background:var(--goldl);color:#8A4B00;border-radius:8px;padding:0 8px;font-weight:800;white-space:nowrap}
+.letter .fld.empty{background:#F3E8FF;color:var(--p2)}
+.mini{font-size:17px;padding:16px 18px;line-height:1.6;border-top-width:6px}
+.mini .fld{padding:0 5px}
+.letter .stamp{position:absolute;top:14px;left:18px;font-size:40px}
+.dtable{width:100%;border-collapse:separate;border-spacing:0;font-size:28px;background:#fff;border-radius:20px;overflow:hidden;box-shadow:var(--shadow-s)}
+.dtable th{background:var(--p);color:#fff;padding:16px;font-weight:800}
+.dtable td{padding:14px 16px;border-bottom:2px solid #F1EDFF;text-align:center;font-weight:600}
+.dtable tr:last-child td{border-bottom:none}
+.dtable tr.lit td{background:var(--goldl)}
+.stack{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.stack .letter{animation:pop .55s cubic-bezier(.2,.8,.2,1) both}
+.obs{display:flex;gap:22px;justify-content:center}
+.obs .ob{background:#fff;border:3px dashed var(--p3);border-radius:22px;padding:18px 28px;font-size:30px;font-weight:800;color:var(--p2);min-width:280px;text-align:center;transition:all .3s}
+.obs .ob.shown{border-style:solid;background:var(--pl)}
+
+/* العنوان */
+.title-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:26px}
+.title-wrap .lesson{font-size:40px;font-weight:800;color:var(--mint);background:#fff;padding:12px 36px;border-radius:999px;box-shadow:var(--shadow-s)}
+.title-wrap h1{font-size:150px;font-weight:900;color:var(--ink);line-height:1.1}
+.title-wrap .en{font-size:64px;font-weight:800;color:var(--p);direction:ltr;letter-spacing:2px}
+.env{position:absolute;font-size:80px;animation:fly 7s ease-in-out infinite}
+@keyframes fly{0%{transform:translate(0,0) rotate(-8deg)}50%{transform:translate(-40px,-30px) rotate(8deg)}100%{transform:translate(0,0) rotate(-8deg)}}
+
+/* الأهداف */
+.obj-list{display:flex;flex-direction:column;gap:16px}
+.obj.reveal{opacity:.35;filter:blur(7px);transform:none}
+.obj.reveal.shown{opacity:1;filter:none}
+.obj{display:flex;align-items:center;gap:26px;background:#fff;border-radius:26px;padding:14px 30px;box-shadow:var(--shadow-s);border:2px solid #F0ECFF;font-size:34px;font-weight:700;color:var(--ink)}
+.obj .n{width:62px;height:62px;flex:none;border-radius:22px;background:var(--pl);color:var(--p);display:flex;align-items:center;justify-content:center;font-size:40px}
+
+/* المعادلة */
+.eq{display:flex;align-items:center;justify-content:center;gap:34px}
+.eq .op{font-size:90px;font-weight:900;color:var(--p3)}
+.eq-box{width:420px;height:320px;cursor:pointer}
+.eq-box .face.front{font-size:130px;color:var(--p3);font-weight:900}
+.eq-box .face.back{background:#fff;color:var(--ink);border:3px solid var(--pl)}
+.eq-box .face.back .e{font-size:90px}
+.eq-box .face.back .t{font-size:36px;font-weight:900}
+.eq-box .face.back .s{font-size:24px;color:var(--muted);font-weight:600}
+.eq-box.result .face.back{background:linear-gradient(135deg,var(--p),#9F67FF);color:#fff;border:none}
+.eq-box.result .face.back .s{color:#EDE4FF}
+.def{font-size:38px;line-height:1.7;font-weight:600;color:var(--ink);text-align:center}
+.def b{color:var(--p)}
+
+/* العصف الذهني */
+.bs{position:relative;flex:1}
+.bs-center{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);width:310px;height:310px;border-radius:50%;
+  background:linear-gradient(135deg,var(--p),#A174FF);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-size:32px;font-weight:900;line-height:1.4;box-shadow:0 30px 60px -20px rgba(124,58,237,.6);padding:30px}
+.bs-center .e{font-size:70px}
+.idea{position:absolute;transform:translate(-50%,-50%);width:250px;min-height:120px;border-radius:26px;background:#fff;border:3px dashed var(--p3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:28px;font-weight:800;color:var(--ink);text-align:center;padding:12px;cursor:pointer;transition:all .35s}
+.idea .e{font-size:44px}
+.idea:hover{transform:translate(-50%,-50%) scale(1.06)}
+.idea:not(.shown) .t{display:none}
+.idea.shown{border-style:solid;border-color:var(--pl);box-shadow:var(--shadow-s);background:#fff}
+.idea:not(.shown){background:var(--pll)}
+.bs-add{position:absolute;bottom:0;right:0;left:0;display:flex;gap:14px;align-items:center}
+.bs-add input{flex:0 0 520px;font-size:28px;padding:16px 22px;border-radius:18px;border:3px solid var(--pl);outline:none;background:#fff}
+.bs-add input:focus{border-color:var(--p3)}
+.st-ideas{display:flex;gap:12px;flex-wrap:wrap;flex:1}
+.st-ideas span{background:var(--mintl);color:#115E59;font-size:26px;font-weight:800;padding:10px 20px;border-radius:999px;animation:pop .4s}
+
+/* الخطوات */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:30px}
+.step{position:relative;background:#fff;border-radius:30px;padding:30px;min-height:210px;border:3px solid #F0ECFF;box-shadow:var(--shadow-s);display:flex;align-items:center;gap:24px;cursor:pointer;transition:all .3s}
+.step .num{width:96px;height:96px;flex:none;border-radius:28px;background:var(--pl);color:var(--p);font-size:52px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.step .body{display:flex;flex-direction:column;gap:6px}
+.step .e{font-size:54px}
+.step .t{font-size:36px;font-weight:900;color:var(--ink)}
+.step .d{font-size:24px;color:var(--muted);font-weight:600;line-height:1.5}
+.step:not(.shown) .body{opacity:0;transform:translateX(20px)}
+.step .body{transition:all .45s}
+.step:not(.shown)::after{content:'اضغطي لكشف الخطوة 👆';position:absolute;left:30px;top:50%;transform:translateY(-50%);font-size:26px;color:var(--p3);font-weight:700}
+.step.shown{border-color:var(--p3)}
+.step.shown .num{background:var(--p);color:#fff}
+
+/* محاكاة وورد */
+.sim{display:flex;gap:30px;flex:1;min-height:0}
+.word{flex:1;background:#fff;border-radius:22px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;border:2px solid #DCE3EE;direction:rtl}
+.w-title{background:var(--word);color:#fff;font-size:22px;padding:10px 20px;display:flex;justify-content:space-between;align-items:center}
+.w-title .dots{direction:ltr;letter-spacing:6px}
+.w-tabs{background:var(--word);display:flex;gap:4px;padding:0 12px}
+.w-tab{color:#fff;font-size:22px;padding:10px 18px;border-radius:8px 8px 0 0;transition:background .2s}
+.w-tab:hover{background:rgba(255,255,255,.18)}
+.w-tab.on{background:#F3F3F3;color:var(--word);font-weight:800}
+.w-ribbon{background:#F3F3F3;height:150px;display:flex;align-items:stretch;padding:10px;gap:6px;border-bottom:1px solid #DDD;position:relative}
+.w-group{display:flex;flex-direction:column;border-left:1px solid #D5D5D5;padding:0 12px}
+.w-group .items{display:flex;gap:6px;flex:1;align-items:flex-start}
+.w-group .gname{font-size:15px;color:#666;text-align:center;padding-top:4px}
+.w-btn{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:16px;padding:6px 8px;border-radius:6px;min-width:74px;color:#333;position:relative;text-align:center;line-height:1.2}
+.w-btn .i{font-size:36px}
+.w-btn:hover{background:#DDE6F4}
+.w-btn.target{outline:3px dashed transparent}
+.w-drop{position:absolute;top:130px;background:#fff;border:1px solid #C9C9C9;box-shadow:0 12px 30px rgba(0,0,0,.2);border-radius:8px;z-index:5;min-width:380px;padding:6px;animation:pop .25s}
+.w-drop button{display:flex;align-items:center;gap:12px;width:100%;text-align:right;font-size:21px;padding:10px 14px;border-radius:6px;color:#333}
+.w-drop button:hover{background:#DDE6F4}
+.w-body{flex:1;background:#E7E9EE;display:flex;min-height:0;position:relative}
+.w-page{flex:1;margin:22px 40px;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.12);padding:34px 44px;font-size:22px;line-height:1.9;color:#333}
+.w-pane{width:340px;background:#fff;border-right:1px solid #CCC;padding:16px;font-size:19px;display:flex;flex-direction:column;gap:10px;animation:slideIn .45s both}
+@keyframes slideIn{from{transform:translateX(-60px);opacity:0}to{transform:none;opacity:1}}
+.w-pane h4{font-size:22px;color:var(--word);border-bottom:2px solid #EEE;padding-bottom:8px}
+.guide{width:470px;display:flex;flex-direction:column;gap:18px}
+.gstep{display:flex;gap:16px;align-items:center;background:#fff;border-radius:22px;padding:18px 22px;font-size:27px;font-weight:700;border:3px solid #F0ECFF;transition:all .3s;color:var(--muted)}
+.gstep .n{width:52px;height:52px;flex:none;border-radius:16px;background:var(--pl);color:var(--p);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px}
+.gstep.now{border-color:var(--p);color:var(--ink);box-shadow:var(--shadow-s)}
+.gstep.done{color:#047857;border-color:#A7F3D0;background:var(--okl)}
+.gstep.done .n{background:var(--ok);color:#fff}
+.hint{font-size:28px;font-weight:800;min-height:90px;border-radius:22px;padding:18px 22px;display:flex;align-items:center;gap:12px;line-height:1.5}
+.hint.info{background:var(--pll);color:var(--p2)}
+.hint.no{background:#F3E8FF;color:var(--p2);animation:pop .35s}
+.hint.ok{background:var(--okl);color:#047857;animation:pop .35s}
+.pulse{animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(245,165,36,.0)}50%{box-shadow:0 0 0 8px rgba(245,165,36,.45)}}
+
+/* معالج دمج المراسلات */
+.wiz{width:640px;background:#fff;border-radius:22px;box-shadow:var(--shadow);border:2px solid #DCE3EE;display:flex;flex-direction:column;overflow:hidden}
+.wiz .top{background:var(--word);color:#fff;font-size:28px;font-weight:800;padding:16px 24px}
+.wiz .in{padding:26px 30px;display:flex;flex-direction:column;gap:14px;flex:1}
+.wiz h5{font-size:30px;color:var(--word);font-weight:900}
+.wiz .q{font-size:24px;color:#555}
+.radio{display:flex;align-items:center;gap:16px;font-size:28px;padding:12px 16px;border-radius:14px;border:2px solid transparent;text-align:right;transition:all .2s}
+.radio:hover{background:#EEF3FB}
+.radio .o{width:30px;height:30px;border-radius:50%;border:3px solid #8A8A8A;flex:none;position:relative}
+.radio.sel .o{border-color:var(--word)}
+.radio.sel .o::after{content:'';position:absolute;inset:5px;border-radius:50%;background:var(--word)}
+.radio.sel{border-color:#C7D6EE;background:#F2F6FC}
+.radio.wrong{animation:shake .4s}
+.wiz .foot{border-top:2px solid #EEE;padding:18px 30px;display:flex;justify-content:space-between;align-items:center;font-size:22px;color:#666}
+.wiz .next{font-size:26px;color:var(--word);font-weight:800;padding:8px 14px;border-radius:10px;text-decoration:underline}
+.wiz .next:hover{background:#EEF3FB}
+.stepper{display:flex;gap:12px;justify-content:center}
+.stepper span{width:70px;height:70px;border-radius:20px;background:#fff;border:3px solid var(--pl);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;color:var(--muted);transition:all .3s}
+.stepper span.now{background:var(--p);border-color:var(--p);color:#fff;transform:scale(1.1)}
+.stepper span.done{background:var(--ok);border-color:var(--ok);color:#fff}
+
+/* نافذة تخصيص الأعمدة */
+.dlg{background:#fff;border-radius:18px;box-shadow:var(--shadow);border:2px solid #DCE3EE;overflow:hidden;display:flex;flex-direction:column}
+.dlg .top{background:#F3F3F3;border-bottom:1px solid #DDD;font-size:26px;font-weight:800;padding:14px 22px;color:#333}
+.dlg .in{padding:22px;display:flex;gap:20px;flex:1;min-height:0}
+.lbox{flex:1;border:2px solid #BFC7D5;border-radius:10px;overflow:auto;background:#fff;max-height:560px}
+.lbox button{display:block;width:100%;text-align:right;font-size:25px;padding:9px 16px;color:#333;border-bottom:1px solid #F1F1F1}
+.lbox button:hover{background:#EEF3FB}
+.lbox button.sel{background:var(--word);color:#fff}
+.lbox button.gone{animation:pop .3s reverse forwards}
+.dbtns{display:flex;flex-direction:column;gap:12px;width:230px}
+.dbtn{font-size:25px;padding:12px;border-radius:10px;background:#F3F3F3;border:2px solid #CFCFCF;color:#222;font-weight:700;transition:all .15s}
+.dbtn:hover{background:#E4ECF8;border-color:var(--word)}
+.dbtn:active{transform:scale(.96)}
+.inline-in{display:flex;gap:8px;flex-direction:column}
+.inline-in input{font-size:24px;padding:10px 12px;border:2px solid var(--word);border-radius:10px;outline:none;width:100%}
+.checklist{display:flex;flex-direction:column;gap:12px}
+.checklist div{font-size:26px;font-weight:700;display:flex;gap:12px;align-items:center;color:var(--muted);line-height:1.4}
+.checklist div.ok{color:#047857}
+
+/* قائمة العناوين + المعاينة */
+.addr{flex:1;display:flex;flex-direction:column}
+.addr .tbl-wrap{flex:1;overflow:auto;border:2px solid #BFC7D5;border-radius:10px;max-height:420px}
+.addr table{width:100%;border-collapse:collapse;font-size:24px}
+.addr th{background:#EEF1F6;padding:10px;border:1px solid #D5DBE5;font-weight:800;position:sticky;top:0}
+.addr td{border:1px solid #E1E6EE;padding:0}
+.addr td input{width:100%;border:none;font-size:25px;padding:10px 12px;outline:none;background:transparent;text-align:center}
+.addr td input:focus{background:#FFF8E1}
+.addr tr.cur td{background:#F3F0FF}
+.addr .acts{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.pv-nav{display:flex;align-items:center;justify-content:center;gap:18px;font-size:26px;font-weight:800;color:var(--ink)}
+.pv-nav button{width:58px;height:58px;border-radius:50%;background:var(--pl);color:var(--p2);font-size:30px;font-weight:900}
+.pv-nav button:hover{background:#E1D8FF}
+
+/* فكر زاوج شارك */
+.phases{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.phase{background:#fff;border-radius:30px;padding:28px;text-align:center;border:3px solid #F0ECFF;box-shadow:var(--shadow-s);transition:all .3s;cursor:pointer}
+.phase .e{font-size:80px}
+.phase .t{font-size:40px;font-weight:900;color:var(--ink);margin-top:8px}
+.phase .d{font-size:26px;color:var(--muted);font-weight:600;margin-top:6px;line-height:1.5}
+.phase:hover{transform:translateY(-4px)}
+.phase.on{border-color:var(--p);background:var(--pll);transform:scale(1.03);box-shadow:var(--shadow)}
+.qbig{font-size:46px;font-weight:900;color:var(--ink);line-height:1.5;text-align:center}
+.qbig .e{font-size:60px}
+
+/* التعاوني */
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.role{background:#fff;border-radius:26px;padding:22px;text-align:center;border:2px solid #F0ECFF;box-shadow:var(--shadow-s)}
+.role .e{font-size:64px}
+.role .t{font-size:30px;font-weight:900;color:var(--ink)}
+.role .d{font-size:23px;color:var(--muted);font-weight:600;margin-top:6px;line-height:1.5}
+.tasks{display:flex;flex-direction:column;gap:14px}
+.task{display:flex;gap:16px;align-items:center;font-size:30px;font-weight:700;color:var(--ink);background:#fff;border-radius:20px;padding:16px 22px;border:2px solid #F0ECFF;cursor:pointer;transition:all .2s}
+.task .box{width:44px;height:44px;border-radius:12px;border:3px solid var(--p3);flex:none;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff}
+.task.done{background:var(--okl);border-color:#A7F3D0;text-decoration:line-through;color:#047857}
+.task.done .box{background:var(--ok);border-color:var(--ok)}
+
+/* اختيار من متعدد */
+.q-card{text-align:center;padding:40px 60px}
+.q-card .qn{font-size:30px;color:var(--p);font-weight:800}
+.q-card .qt{font-size:56px;font-weight:900;color:var(--ink);line-height:1.45;margin-top:10px}
+.opts{display:grid;grid-template-columns:repeat(2,1fr);gap:28px}
+.opt{display:flex;align-items:center;gap:24px;background:#fff;border:3px solid var(--pl);border-radius:28px;padding:36px 40px;font-size:44px;font-weight:800;color:var(--ink);box-shadow:var(--shadow-s);transition:transform .15s,border-color .2s,background .2s;text-align:right}
+.opt .e{font-size:58px}
+.opt .k{width:60px;height:60px;border-radius:18px;background:var(--pl);color:var(--p);display:flex;align-items:center;justify-content:center;font-size:30px;flex:none;margin-right:auto}
+.opt:hover{transform:translateY(-4px);border-color:var(--p3)}
+.opt:active{transform:scale(.97)}
+.opt.right{background:var(--okl);border-color:var(--ok);animation:pop .4s}
+.opt.right .k{background:var(--ok);color:#fff}
+.opt.wrong{background:#FAF5FF;border-color:#D8B4FE;opacity:.75}
+
+/* صح أم خطأ */
+.tf-list{display:flex;flex-direction:column;gap:18px}
+.tf{display:flex;align-items:center;gap:22px;background:#fff;border-radius:24px;padding:22px 28px;border:3px solid #F0ECFF;box-shadow:var(--shadow-s);transition:all .3s}
+.tf .n{width:58px;height:58px;border-radius:18px;background:var(--pl);color:var(--p);font-weight:900;font-size:30px;display:flex;align-items:center;justify-content:center;flex:none}
+.tf .s{flex:1;font-size:36px;font-weight:700;color:var(--ink);line-height:1.45}
+.tf .ex{display:block;font-size:23px;color:#047857;font-weight:700;margin-top:4px}
+.tf .b{display:flex;gap:12px}
+.tf .b button{font-size:28px;font-weight:900;padding:12px 26px;border-radius:16px;transition:all .15s}
+.tf .b .t{background:var(--okl);color:#047857}
+.tf .b .f{background:var(--badl);color:#BE123C}
+.tf .b button:hover{transform:scale(1.07)}
+.tf.good{border-color:var(--ok);background:#F2FDF8}
+.tf.bad{animation:shake .4s}
+.tf .res{font-size:44px;width:56px;text-align:center}
+
+/* تحدي الدقيقة */
+.slots{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+.slot{height:130px;border-radius:24px;border:3px dashed var(--p3);background:var(--pll);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:var(--p3);text-align:center;padding:8px;line-height:1.35}
+.slot.fill{border-style:solid;border-color:var(--ok);background:var(--okl);color:#047857;animation:pop .4s}
+.slot .n{font-size:32px}
+.pool{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;position:relative}
+.piece{background:#fff;border:3px solid var(--pl);border-radius:24px;padding:22px;font-size:32px;font-weight:800;color:var(--ink);box-shadow:var(--shadow-s);transition:all .2s}
+.piece:hover{border-color:var(--p3);transform:translateY(-4px)}
+.piece.used{visibility:hidden}
+.pool.locked .piece{filter:blur(6px);pointer-events:none}
+.lock-msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:900;color:var(--p2);z-index:2}
+
+/* المراجعة - خريطة ذهنية */
+.mind{position:relative;flex:1}
+.mind-c{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:330px;height:330px;border-radius:50%;background:linear-gradient(135deg,var(--p),#A174FF);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:42px;font-weight:900;text-align:center;box-shadow:0 30px 60px -20px rgba(124,58,237,.6);z-index:2}
+.mind-c .e{font-size:76px}
+.branch{position:absolute;width:560px;background:#fff;border-radius:28px;padding:22px 28px;box-shadow:var(--shadow);border:3px solid #F0ECFF;cursor:pointer;transition:all .3s}
+.branch:hover{border-color:var(--p3)}
+.branch .bt{font-size:34px;font-weight:900;color:var(--ink);display:flex;align-items:center;gap:12px}
+.branch .bt .e{font-size:44px}
+.branch .bd{font-size:26px;color:var(--txt);font-weight:600;line-height:1.6;max-height:0;overflow:hidden;opacity:0;transition:all .45s}
+.branch.shown .bd{max-height:240px;opacity:1;margin-top:10px}
+.branch:not(.shown)::after{content:'👆 اضغطي للكشف';font-size:22px;color:var(--p3);font-weight:700}
+.mind svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+
+/* بطاقة الخروج */
+.exit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.ex-card{border-radius:28px;padding:28px;min-height:190px;display:flex;flex-direction:column;gap:10px;justify-content:center;text-align:center}
+.ex-card .e{font-size:64px}
+.ex-card .t{font-size:32px;font-weight:900}
+.faces{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+.face-btn{background:#fff;border-radius:28px;padding:22px;border:3px solid var(--pl);box-shadow:var(--shadow-s);display:flex;align-items:center;justify-content:center;gap:18px;transition:all .15s}
+.face-btn:hover{transform:translateY(-4px);border-color:var(--p3)}
+.face-btn .e{font-size:72px}
+.face-btn .t{font-size:30px;font-weight:800;color:var(--ink)}
+.face-btn .c{font-size:44px;font-weight:900;color:var(--p);min-width:60px}
+
+/* الختام */
+.close-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:26px}
+.close-wrap h1{font-size:120px;font-weight:900;color:var(--ink)}
+.close-wrap h1 span{background:linear-gradient(90deg,var(--p),var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+.quote{font-size:42px;font-weight:700;color:var(--p2);background:#fff;border-radius:30px;padding:24px 50px;box-shadow:var(--shadow-s)}
+.hw{display:flex;align-items:center;gap:20px;background:var(--mintl);color:#115E59;border-radius:26px;padding:20px 36px;font-size:32px;font-weight:800}
+.hw .e{font-size:56px}
+
+/* =========================================================
+   6) شريط التحكم السفلي + مؤشر الاختصارات
+   ========================================================= */
+#bar{position:absolute;bottom:26px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;direction:ltr;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);padding:10px 12px;border-radius:26px;
+  box-shadow:0 18px 40px -16px rgba(46,16,101,.45);border:2px solid #EFEAFF;z-index:40;transition:opacity .4s,transform .4s}
+#bar.hide,#keys.hide{opacity:0;pointer-events:none}
+#bar.hide{transform:translate(-50%,30px)}
+.cb{height:66px;min-width:66px;padding:0 22px;border-radius:18px;font-size:26px;font-weight:800;color:var(--p2);background:var(--pll);display:flex;align-items:center;gap:10px;transition:all .15s;direction:rtl}
+.cb:hover{background:var(--pl);transform:translateY(-2px)}
+.cb:active{transform:scale(.93)}
+.cb.main{background:var(--p);color:#fff}
+.cb.main:hover{background:var(--p2)}
+.cb.icon{font-size:34px;padding:0 14px}
+#count{font-size:28px;font-weight:900;color:var(--ink);min-width:120px;text-align:center;direction:rtl}
+.sep{width:2px;height:40px;background:#EEE9FF;margin:0 4px}
+#keys{position:absolute;bottom:40px;left:34px;font-size:21px;font-weight:700;color:var(--muted);background:rgba(255,255,255,.8);padding:10px 18px;border-radius:14px;z-index:40;transition:opacity .4s;direction:rtl}
+#keys kbd{font-family:inherit;background:var(--pl);color:var(--p2);border-radius:6px;padding:1px 8px;font-weight:900}
+#slideTag{position:absolute;bottom:40px;right:34px;font-size:22px;font-weight:800;color:var(--p3);z-index:40;transition:opacity .4s}
+
+/* =========================================================
+   7) الطبقات المنبثقة: التأثيرات، القرعة، لوحة النقاط، نافذة الدمج
+   ========================================================= */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:100;overflow:hidden}
+.clap-fly{position:absolute;font-size:46px;will-change:transform,opacity}
+.conf{position:absolute;width:14px;height:20px;border-radius:3px;will-change:transform}
+.overlay{position:absolute;inset:0;background:rgba(46,16,101,.45);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:60;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all .35s}
+.overlay.open{opacity:1;visibility:visible}
+.panel{background:#fff;border-radius:40px;padding:44px 54px;box-shadow:0 40px 90px -30px rgba(0,0,0,.5);transform:scale(.9);transition:transform .35s cubic-bezier(.2,.8,.2,1);max-width:1600px;max-height:900px;overflow:auto;position:relative}
+.overlay.open .panel{transform:none}
+.x{position:absolute;top:22px;left:26px;width:60px;height:60px;border-radius:50%;background:var(--pl);color:var(--p2);font-size:30px;font-weight:900}
+.pick-num{font-size:150px;font-weight:900;color:var(--p);line-height:1.25;text-align:center;min-width:900px;white-space:nowrap;margin:20px 0 6px}
+.pick-sub{font-size:32px;color:var(--muted);font-weight:700;margin-bottom:26px}
+/* كشف الطالبات */
+.roster-head{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin:18px 0 22px}
+.roster-head .cnt{font-size:34px;font-weight:900;color:var(--ink);margin-left:auto}
+.roster-head input{font-size:26px;padding:12px 18px;border-radius:16px;border:3px solid var(--pl);outline:none;width:380px}
+.roster-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.st{position:relative;background:var(--pll);border:3px solid transparent;border-radius:20px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .2s}
+.st:hover{border-color:var(--p3)}
+.st .no{position:absolute;top:10px;left:12px;font-size:20px;font-weight:800;color:var(--p3)}
+.st .nm{font-size:27px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:34px}
+.st .row2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.st .stat{font-size:20px;font-weight:800;color:#047857;background:var(--okl);border-radius:999px;padding:3px 12px}
+.st .star{font-size:22px;font-weight:900;background:#fff;border-radius:12px;padding:4px 10px;color:#8A4B00;box-shadow:var(--shadow-s)}
+.st .star:hover{background:var(--goldl)}
+.st .rm{position:absolute;top:-10px;right:-10px;width:34px;height:34px;border-radius:50%;background:#fff;color:var(--bad);font-size:18px;font-weight:900;box-shadow:var(--shadow-s);opacity:0;transition:opacity .2s}
+.st:hover .rm{opacity:1}
+.st.off{background:#F4F4F6;opacity:.6}
+.st.off .nm{text-decoration:line-through;color:var(--muted)}
+.st.off .stat{background:var(--badl);color:#BE123C}
+.score-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:24px}
+.grp{display:flex;align-items:center;gap:18px;background:var(--pll);border-radius:26px;padding:20px 26px;border:3px solid transparent;transition:all .3s}
+.grp.lead{border-color:var(--gold);background:var(--goldl)}
+.grp .e{font-size:58px}
+.grp .nm{font-size:34px;font-weight:900;color:var(--ink);flex:1}
+.grp .sc{font-size:56px;font-weight:900;color:var(--p);min-width:90px;text-align:center}
+.grp button{width:60px;height:60px;border-radius:50%;background:#fff;color:var(--p2);font-size:34px;font-weight:900;box-shadow:var(--shadow-s)}
+.grp button.plus{background:var(--p);color:#fff}
+.merge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:22px}
+
+
+/* ===== النشاط الإثرائي ===== */
+.en-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;flex:1;min-height:0}
+.en{background:#fff;border-radius:30px;border:3px solid #F0ECFF;box-shadow:var(--shadow);padding:20px 26px;display:flex;flex-direction:column;gap:8px;position:relative;transition:all .3s}
+.en .lv{font-size:26px;letter-spacing:2px}
+.en .e{font-size:48px;line-height:1}
+.en .t{font-size:30px;font-weight:900;color:var(--ink);line-height:1.3}
+.en .d{font-size:22px;font-weight:600;color:var(--txt);line-height:1.6}
+.en ol{margin:0;padding-right:28px;font-size:21px;font-weight:700;color:var(--p2);line-height:1.6;max-height:0;overflow:hidden;opacity:0;transition:all .45s}
+.en.open ol{max-height:420px;opacity:1}
+.en .acts{display:flex;gap:10px;margin-top:auto;flex-wrap:wrap}
+.en.done{border-color:var(--ok);background:#F2FDF8}
+.en.done::after{content:'🏅';position:absolute;top:-22px;left:-14px;font-size:58px;animation:pop .5s}
+.en-badge{display:inline-flex;gap:10px;align-items:center;background:linear-gradient(90deg,var(--gold),#FFCF6B);color:#5A3500;font-size:26px;font-weight:900;padding:8px 22px;border-radius:999px;margin-right:16px;vertical-align:middle}
+
+
+/* ===== شرائح دعم بنود التقييم ===== */
+.hots{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;flex:1;min-height:0}
+.hq{background:#fff;border-radius:30px;border:3px solid #F0ECFF;box-shadow:var(--shadow);padding:26px 28px;display:flex;flex-direction:column;gap:14px}
+.hq .lvl{align-self:flex-start;font-size:24px;font-weight:900;padding:6px 18px;border-radius:999px}
+.hq .q{font-size:30px;font-weight:800;color:var(--ink);line-height:1.55}
+.hq .ans{font-size:24px;font-weight:700;color:#047857;background:var(--okl);border-radius:18px;padding:14px 18px;line-height:1.6}
+.hq .acts{display:flex;gap:10px;margin-top:auto}
+.life{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.lc{display:flex;gap:22px;align-items:center;background:#fff;border-radius:28px;border:3px solid #F0ECFF;box-shadow:var(--shadow-s);padding:22px 28px;cursor:pointer;transition:all .3s;min-height:170px}
+.lc:hover{border-color:var(--p3)}
+.lc .e{font-size:72px}
+.lc .t{font-size:32px;font-weight:900;color:var(--ink)}
+.lc .d{font-size:25px;font-weight:700;color:var(--p2);line-height:1.55;margin-top:6px;max-height:0;opacity:0;overflow:hidden;transition:all .4s}
+.lc.shown{border-color:var(--mint);background:#F4FFFD}
+.lc.shown .d{max-height:200px;opacity:1}
+.lc:not(.shown) .t::after{content:'  👆';font-size:24px}
+.book{display:flex;gap:34px;flex:1;min-height:0}
+.book .cover{width:360px;border-radius:24px;background:linear-gradient(160deg,var(--p),#A174FF);color:#fff;padding:34px;display:flex;flex-direction:column;justify-content:center;gap:14px;box-shadow:var(--shadow);text-align:center}
+.book .cover .e{font-size:110px}
+.book .cover .t{font-size:34px;font-weight:900}
+.book .cover .pg{font-size:30px;font-weight:800;background:rgba(255,255,255,.2);border-radius:16px;padding:8px}
+.btasks{flex:1;display:flex;flex-direction:column;gap:14px}
+.bt{display:flex;align-items:center;gap:18px;background:#fff;border-radius:22px;padding:16px 24px;border:3px solid #F0ECFF;box-shadow:var(--shadow-s);cursor:pointer;transition:all .25s;font-size:29px;font-weight:700;color:var(--ink)}
+.bt .pgn{margin-right:auto;font-size:24px;color:var(--p2);background:var(--pl);border-radius:12px;padding:4px 14px;white-space:nowrap}
+.bt .box{width:46px;height:46px;border-radius:14px;border:3px solid var(--p3);flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px}
+.bt.done{background:var(--okl);border-color:#A7F3D0}
+.bt.done .box{background:var(--ok);border-color:var(--ok)}
+.bt.hw .pgn{background:var(--goldl);color:#7A4A00}
+.quiz{flex:1;display:flex;flex-direction:column;gap:22px}
+.qdots{display:flex;gap:12px;justify-content:center}
+.qdots span{width:54px;height:54px;border-radius:16px;background:#fff;border:3px solid var(--pl);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:var(--muted)}
+.qdots span.now{border-color:var(--p);color:var(--p);transform:scale(1.1)}
+.qdots span.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.qdots span.no{background:#E9D5FF;border-color:#C4B5FD;color:var(--p2)}
+.qres{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center}
+.qres .big{font-size:150px;font-weight:900;color:var(--p);line-height:1}
+.qres .stars{font-size:70px;letter-spacing:8px}
+.qres .msg{font-size:40px;font-weight:900;color:var(--ink)}
+/* لوحة بنود التقييم */
+.ev-dom{margin-top:22px}
+.ev-dom h4{font-size:32px;font-weight:900;color:var(--p2);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.ev-it{display:flex;align-items:center;gap:14px;padding:10px 16px;border-radius:14px;background:var(--pll);margin-bottom:8px;flex-wrap:wrap}
+.ev-it .nm{font-size:25px;font-weight:800;color:var(--ink);flex:1;min-width:420px}
+.ev-it .ok{font-size:24px}
+.ev-chip{font-size:20px;font-weight:800;padding:6px 12px;border-radius:12px;background:#fff;border:2px solid var(--pl);color:var(--p2)}
+button.ev-chip:hover{border-color:var(--p);background:var(--pl)}
+.ev-chip.file{background:var(--mintl);border-color:#A7F3D0;color:#115E59}
+.ev-chip.adm{background:var(--goldl);border-color:#FCD9A0;color:#7A4A00}
+
+
+/* ===== حقيبة المعلمة ===== */
+#ovKit .panel{width:1840px;height:980px;max-height:980px;display:flex;flex-direction:column;overflow:hidden;padding:34px 40px}
+.khead{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:14px;padding-left:70px}
+.khead .ttl{font-size:40px;font-weight:900;color:var(--ink);margin-left:auto}
+#kitTabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.ktb{font-size:24px;font-weight:800;padding:10px 18px;border-radius:14px;background:var(--pll);color:var(--p2);border:2px solid var(--pl)}
+.ktb.on{background:var(--p);color:#fff;border-color:var(--p)}
+#kitDoc{flex:1;overflow:auto;background:#EEEAF8;border-radius:20px;padding:30px}
+.kdoc,#printArea{direction:rtl;text-align:right;font-family:var(--font);color:#1f1b2e}
+#kitDoc{font-size:24px;line-height:1.7}
+.paper{background:#fff;max-width:1320px;margin:0 auto;padding:40px 56px;border-radius:14px;box-shadow:0 10px 30px -18px rgba(46,16,101,.4)}
+.paper ol,.paper ul,#printArea ol,#printArea ul{padding-right:1.6em}
+.paper ol,#printArea ol{list-style-type:arabic-indic}
+.khd{text-align:center;margin-bottom:10px}
+.khd .kt1{font-size:1.6em;font-weight:900;color:#6D28D9}
+.khd .kt2{font-size:1.05em;font-weight:700}
+.kdoc h3,#printArea h3,#kitDoc h3{font-size:1.1em;font-weight:900;color:#2E1065;margin:0;padding-top:16px;padding-bottom:6px}
+.kt{width:100%;border-collapse:collapse;margin:6px 0 10px}
+.kt th,.kt td{border:1px solid #BFB6E0;padding:6px 10px;vertical-align:middle;font-size:.9em}
+.kt th,.kt td.lb{background:#EDE9FE;font-weight:800;color:#2E1065}
+.kt tr.kabs td{color:#999;background:#F7F7F9}
+.kq{font-weight:800;margin:10px 0 0!important}
+.ktag{background:#EDE9FE;color:#6D28D9;border-radius:8px;padding:0 8px;font-size:.85em}
+.kline{border-bottom:1.5px dotted #999;height:1.9em}
+.kbox{height:4.5em}
+.knote{color:#7A7394;font-size:.85em}
+.kchip{display:inline-block;border-radius:8px;padding:0 8px;font-size:.8em;font-weight:800;margin-left:4px}
+.kchip.s{background:#EDE9FE;color:#6D28D9}.kchip.f{background:#D5F7F2;color:#115E59}.kchip.a{background:#FEF3D6;color:#7A4A00}
+ul.cols{columns:2}
+.kin{font-family:inherit;font-size:1em;width:90px;text-align:center;border:2px solid #D8D2F0;border-radius:8px;padding:2px 6px}
+input[type=checkbox].kin{width:24px;height:24px}
+.pb{height:0}
+#printArea{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
+  body.printing>*:not(#printArea){display:none!important}
+  body.printing #printArea{display:block!important;font-size:12pt;line-height:1.55}
+  #printArea .pb{break-before:page}
+  #printArea .noprint{display:none}
+  #printArea .kt{page-break-inside:auto}
+  #printArea .kt tr{page-break-inside:avoid}
+  #printArea .kin{border:none;width:auto}
+  #printArea *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<!-- المسرح الذي يحتوي كل الشرائح -->
+<div id="stage" data-dir="next">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div id="progress"></div>
+  <div id="slides"></div>
+
+  <!-- شريط التحكم -->
+  <div id="bar">
+    <button class="cb" id="btnPrev" title="السابق (←)">← السابق</button>
+    <div id="count">1 / 1</div>
+    <button class="cb main" id="btnNext" title="التالي (→ أو Space)">التالي →</button>
+    <div class="sep"></div>
+    <button class="cb icon" id="btnClap" title="تصفيق (ت)">👏</button>
+    <button class="cb icon" id="btnPick" title="اختيار طالبة عشوائيًا">🎲</button>
+    <button class="cb icon" id="btnRoster" title="كشف الطالبات والحضور">👩‍🎓</button>
+    <button class="cb icon" id="btnScore" title="لوحة نقاط المجموعات">🏆</button>
+    <button class="cb icon" id="btnWord" title="محاكي وورد (يفتح في نافذة جديدة)" onclick="window.open('word.html','_blank')">🖥️</button>
+    <button class="cb icon" id="btnKit" title="حقيبة المعلمة (الخطة، ورقة العمل، بنك الأسئلة…)">📁</button>
+    <button class="cb icon" id="btnEval" title="بنود تقييم الأداء">📑</button>
+    <button class="cb icon" id="btnFull" title="ملء الشاشة">⛶</button>
+  </div>
+  <div id="keys"><kbd>Space</kbd> = التالي &nbsp;|&nbsp; <kbd>←</kbd> <kbd>→</kbd> للتنقل &nbsp;|&nbsp; <kbd>ت</kbd> = تصفيق</div>
+  <div id="slideTag"></div>
+
+  <!-- نافذة القرعة -->
+  <div class="overlay" id="ovPick"><div class="panel" style="text-align:center">
+    <button class="x" data-close>✕</button>
+    <div style="font-size:44px;font-weight:900;color:var(--ink)">🎲 من تجيب الآن؟</div>
+    <div class="pick-num" id="pickNum">?</div>
+    <div class="pick-sub" id="pickSub"></div>
+    <div class="row" style="justify-content:center;gap:18px"><button class="btn gold" id="pickStar">⭐ نجمة لها</button><button class="btn" id="pickAgain">🎲 قرعة جديدة</button></div>
+  </div></div>
+
+  <!-- كشف الطالبات والحضور -->
+  <div class="overlay" id="ovRoster"><div class="panel" style="width:1840px;padding:40px 44px">
+    <button class="x" data-close>✕</button>
+    <div style="font-size:50px;font-weight:900;color:var(--ink)">👩‍🎓 كشف الطالبات والحضور</div>
+    <div class="roster-head">
+      <input id="rosterAdd" type="text" placeholder="✍️ اسم طالبة جديدة ثم Enter">
+      <button class="btn sm mint" id="rosterAddBtn">➕ إضافة</button>
+      <button class="btn sm soft" id="allPresent">✔ الكل حاضرات</button>
+      <button class="btn sm soft" id="resetStars">⭐ تصفير النجوم</button>
+      <button class="btn sm soft" id="clearAll" style="color:#BE123C">🗑️ مسح البيانات المحفوظة</button>
+      <span class="cnt">الحاضرات: <span data-present></span> / <span data-total></span></span>
+    </div>
+    <div style="font-size:24px;color:var(--muted);font-weight:700;margin-bottom:14px">👆 اضغطي على بطاقة الطالبة لتسجيل الغياب/الحضور • ⭐ لإعطائها نجمة • البيانات تُحفظ تلقائيًا في هذا المتصفح</div>
+    <div class="roster-grid" id="rosterGrid"></div>
+  </div></div>
+
+  <!-- حقيبة المعلمة -->
+  <div class="overlay" id="ovKit"><div class="panel">
+    <button class="x" data-close>✕</button>
+    <div class="khead"><span class="ttl">📁 حقيبة المعلمة</span>
+      <button class="btn sm" id="kitPrint">🖨️ طباعة هذا التبويب</button><button class="btn sm soft" id="kitPrintAll">🖨️ طباعة الحقيبة كاملة</button></div>
+    <div id="kitTabs"></div>
+    <div id="kitDoc" class="kdoc"></div>
+  </div></div>
+
+  <!-- لوحة بنود تقييم الأداء -->
+  <div class="overlay" id="ovEval"><div class="panel" style="width:1800px">
+    <button class="x" data-close>✕</button>
+    <div style="font-size:48px;font-weight:900;color:var(--ink)">📑 بنود تقييم الأداء في هذا الدرس</div>
+    <div style="font-size:24px;color:var(--muted);font-weight:700;margin-top:6px">اضغطي على رقم الشريحة للانتقال إليها مباشرة • 📁 في حقيبة المعلمة داخل العرض • 👩‍🏫 بند إداري</div>
+    <div id="evalBody"></div>
+  </div></div>
+
+  <!-- لوحة النقاط -->
+  <div class="overlay" id="ovScore"><div class="panel" style="width:1300px">
+    <button class="x" data-close>✕</button>
+    <div style="font-size:52px;font-weight:900;color:var(--ink)">🏆 لوحة نقاط المجموعات</div>
+    <div class="score-grid" id="scoreGrid"></div>
+  </div></div>
+
+  <!-- نافذة نتائج إتمام الدمج -->
+  <div class="overlay" id="ovMerge"><div class="panel" style="width:1650px">
+    <button class="x" data-close>✕</button>
+    <div style="font-size:48px;font-weight:900;color:var(--ink)">🎉 تم إتمام الدمج! <span id="mergeCount" style="color:var(--p)"></span></div>
+    <div class="merge-grid" id="mergeGrid"></div>
+  </div></div>
+</div>
+
+<!-- طبقة التأثيرات (تصفيق/احتفال) -->
+<div id="fx"></div>
+<!-- منطقة الطباعة (تظهر عند الطباعة فقط) -->
+<div id="printArea"></div>
+
+<script>
+/* ==================================================================
+   ⚙️⚙️⚙️  إعدادات المحتوى — عدّلي هنا فقط  ⚙️⚙️⚙️
+   ------------------------------------------------------------------
+   • كل شريحة عبارة عن كائن { type: '...' , ... }.
+   • لإضافة شريحة: انسخي أي شريحة والصقيها في المكان الذي تريدينه.
+   • لحذف شريحة: احذفي الكائن كاملًا من { إلى }.
+   • عدد الشرائح يُحسب تلقائيًا.
+   • transition: 'fade' أو 'slide' أو 'zoom'  (نوع حركة الانتقال)
+   ================================================================== */
+const CONFIG = {
+
+  /* ---- بيانات الدرس (تظهر في شرائح الترحيب والتحضير والعنوان) ---- */
+  lesson: {
+    subject:  'المهارات الرقمية',
+    grade:    'الصف الأول المتوسط',
+    number:   'الدرس الثاني',
+    title:    'دمج المراسلات',
+    titleEn:  'Mail Merge',
+    teacher:  'أ. رحاب',
+    school:   'مدارس مناهل البكيرية',
+    className:'١ / م',        // الفصل (يمكن تعديله مباشرة على الشريحة بالضغط عليه)
+    period:   'الثالثة',      // الحصة
+    classSize: 30             // (لم يعد مستخدمًا — العدد يُحسب من قائمة الطالبات بالأسفل)
+  },
+
+  /* ---- قائمة الطالبات (تُستخدم في: القرعة 🎲، كشف الحضور 👩‍🎓، النجوم ⭐، وشرائح الدمج) ----
+     • أضيفي أو احذفي أو عدّلي الأسماء هنا، وسيتحدّث العرض تلقائيًا.
+     • يمكن أيضًا الإضافة والحذف من داخل العرض عبر زر 👩‍🎓 (ويُحفظ في المتصفح). */
+  students: [
+    'أوراد فيصل سليمان أباالخيل',
+    'بيسان بنت عبدالله بن محمد العمرو',
+    'جمان بنت سلطان بن عبدالله السالمي الحربي',
+    'جمانه عبدالعزيز صالح المحيسن',
+    'جوان خلف حمود الحربي',
+    'خزامى علي عبدالكريم السديس',
+    'ديم انس عبدالعزيز الحديثي',
+    'ريتال مساعد مشعان الحربي',
+    'سارة عبدالله رشيد الحربي',
+    'سارة محمد عبدالله الراشد',
+    'سدن بنت عبدالله بن ابراهيم اللحيدان',
+    'سديم عبدالله صالح السحيباني',
+    'سدين ماجد عبدالعزيز الحربي',
+    'عائشة ابراهيم محمد السدراني',
+    'عاليه بنت عبدالرزاق بن صالح اللحيدان',
+    'علا بنت عبدالعزيز بن عبدالرحمن الوهيبي',
+    'غالية علي بن ابراهيم العرف',
+    'غنى خالد علي الميمان',
+    'فرح محمد منصور البراك',
+    'كيان سليمان محمد المحمود',
+    'لانا خالد منير الحربي',
+    'لتين مشعل فرحان العنزي',
+    'لين ابراهيم محمد المحسن',
+    'لين بنت عبدالعزيز بن علي الماضي',
+    'ماسه بنت ثامر بن سليمان الشنيفي',
+    'ميلا عماد عبد العزيز المشيقح',
+    'ميلاف عبدالاله محمد اللحيدان',
+    'نردين عبدالله علي الفريح',
+    'نوره محمد بن علي السحيباني',
+    'هناي بنت أنس بن أحمد العيوني'
+  ],
+
+  /* ---- ربط بنود تقييم الأداء بالشرائح (يظهر من زر 📑) ---- */
+  evalMap: [
+    { domain:'التخطيط للتدريس', e:'🗓️', items:[
+      { t:'إعداد الخطط الأسبوعية وفق الخطط الجديدة', files:['خطة الدرس'] },
+      { t:'متمكن من المادة العلمية ويحضّر لها جيدًا', tags:['تطبيق عملي'], files:['خطة الدرس'] },
+      { t:'يتقن صياغة أهدافه التعليمية', tags:['أهداف الدرس'] },
+      { t:'مطابقة الإعداد لما يقدَّم في الفصل', tags:['التحضير'], files:['خطة الدرس بنفس ترتيب العرض'] },
+      { t:'توفّر الحقيبة التدريسية', files:['العرض التفاعلي','حقيبة المعلمة 📁'] } ]},
+    { domain:'استراتيجيات التدريس', e:'🧩', items:[
+      { t:'استخدام الاستراتيجيات المناسبة للدرس', tags:['التهيئة','العصف الذهني','فكر - زاوج - شارك','التعلم التعاوني','لاحظ وميّز','تحدي الدقيقة'] },
+      { t:'إعداد أوراق العمل وفق الاستراتيجية', files:['ورقة العمل'] },
+      { t:'الالتزام باستخدام اللغة العربية الفصحى', admin:'جميع نصوص العرض بالفصحى' } ]},
+    { domain:'دعم التعلم', e:'💡', items:[
+      { t:'استخدام التقنية الحديثة أداةً للتوضيح والتحفيز', tags:['تطبيق عملي','لاحظ واكتشف'] },
+      { t:'استخدام ومتابعة كتاب الطالب', tags:['كتاب الطالبة'] },
+      { t:'تشجيع الطلاب على الاستزادة من المعرفة (الإثراء)', tags:['نشاط إثرائي'], files:['بطاقة النشاط الإثرائي'] },
+      { t:'قدرة المعلم على غلق وإنهاء الدرس', tags:['مراجعة','الختام'] } ]},
+    { domain:'إدارة الصف', e:'🏫', items:[
+      { t:'يضبط الصف ويديره بكفاءة', tags:['التحضير'], admin:'لوحة النقاط 🏆 والقرعة 🎲 وكشف الحضور 👩‍🎓' },
+      { t:'تهيئة البيئة الصفية وإدارة وقت التعلم', tags:['فكر - زاوج - شارك','التعلم التعاوني','تحدي الدقيقة'], admin:'مؤقتات زمنية + توزيع زمن في الخطة' } ]},
+    { domain:'الواجبات', e:'📝', items:[
+      { t:'متابعة تصويب وتصحيح وتدقيق دفاتر وكتب الطلاب', tags:['كتاب الطالبة','الختام'], admin:'تصحيح الكتب وتوقيعها دوريًا' } ]},
+    { domain:'دعم المتعلمين', e:'🤝', items:[
+      { t:'تشجيع الطلاب على التعبير عن حاجاتهم وآرائهم', tags:['العصف الذهني','فكر - زاوج - شارك','التقييم الفوري'] },
+      { t:'استخدام التحفيز بأنواعه', tags:['ترحيب','الختام'], admin:'التصفيق 👏 والنجوم ⭐ ونقاط المجموعات 🏆' },
+      { t:'دعم ما تعلّمه الطلاب في الدرس في حياتهم', tags:['في حياتي'] } ]},
+    { domain:'التقويم', e:'📊', items:[
+      { t:'استخدام أساليب متنوعة في التقويم', tags:['سؤال','صح أم خطأ','تحدي الدقيقة','قياس قصير','التقييم الفوري'] },
+      { t:'الإسهام في بناء بنك الأسئلة لمادة التخصص', files:['بنك الأسئلة'] },
+      { t:'يسأل أسئلة مثيرة لمهارات التفكير العليا', tags:['التفكير العليا'] },
+      { t:'مستوى أداء الطلاب (قياس قصير – تحصيلي – نهائي)', tags:['قياس قصير'], files:['القياس القصير ونموذج الإجابة'] } ]},
+    { domain:'بنود إدارية (تُستكمل من المعلمة)', e:'📌', items:[
+      { t:'الانضباط الإداري: الدوام، الزي، التواصل، منصة مدرستي، التوجيهات، الإشراف اليومي', admin:'انظري شواهد التقييم' },
+      { t:'النشاط، الرخصة المهنية، السلوك العام، منجزات المعلم، ملف الإنجاز', admin:'انظري شواهد التقييم' } ]}
+  ],
+
+  /* ---- المجموعات (لوحة النقاط 🏆) ---- */
+  groups: [
+    { name: 'المتفوقات', emoji: '🌟' },
+    { name: 'المتميزات', emoji: '💎' },
+    { name: 'الرائدات',  emoji: '🚀' },
+    { name: 'المتألقات', emoji: '🌸' }
+  ],
+
+  /* ---- بيانات الدمج المشتركة (تستخدم في شريحتي «لاحظ واكتشف» و«قائمة المستلمين») ---- */
+  merge: {
+    fields: ['الاسم الأول', 'اسم العائلة', 'الصف'],
+    rows: [
+      ['سارة', 'العتيبي', '١/١'],
+      ['نورة', 'الحربي',  '١/٢'],
+      ['ريم',  'السبيعي', '١/١'],
+      ['جود',  'المطيري', '١/٣']
+    ],
+    // نص الرسالة: ضعي اسم الحقل بين { } ليُستبدل ببيانات كل مستلمة
+    template: [
+      'إلى: {الاسم الأول} {اسم العائلة}',
+      'الصف: {الصف}',
+      'مرحبًا 🌷',
+      'ندعوكِ لحضور اجتماعنا السنوي في المتحف الوطني للمملكة العربية السعودية.',
+      'يُقام الحدث يوم ١٣ محرم في تمام الساعة ٧ مساءً.',
+      'يسعدنا حضوركِ.'
+    ]
+  },
+
+  /* ================== الشرائح بالترتيب ================== */
+  slides: [
+
+    /* 1) الترحيب */
+    { type:'hero', transition:'zoom', tag:'ترحيب',
+      emoji:'💻', title:'أهلًا بكنّ في حصة <span>المهارات الرقمية</span>',
+      subtitle:'جاهزات لمغامرة رقمية جديدة؟ اليوم سنتعلّم سرًّا يوفّر ساعات من العمل! ✨',
+      button:'نعم جاهزات! 👏' },
+
+    /* 2) التحضير */
+    { type:'prep', transition:'slide', tag:'التحضير', strategy:'📋 التحضير',
+      title:'التحضير <span class="hl">وميثاق الحصة</span>',
+      rules:[ {e:'🙋‍♀️',t:'أرفع يدي'}, {e:'👂',t:'أُنصت جيدًا'}, {e:'🤝',t:'أتعاون'}, {e:'💻',t:'أحافظ على جهازي'} ] },
+
+    /* 3) مراجعة الدرس السابق + الربط */
+    { type:'review', transition:'slide', tag:'مراجعة الدرس السابق', strategy:'🧠 استراتيجية الأسئلة',
+      title:'هيا نتذكّر… <span class="hl">ماذا تعلّمنا في وورد؟</span>',
+      cards:[
+        { q:'أين نجد أوامر تنسيق الخط وحجمه ولونه؟', a:'تبويب الصفحة الرئيسية (Home) 🏠' },
+        { q:'ما اختصار حفظ المستند؟',                 a:'Ctrl + S 💾' },
+        { q:'كيف نُدرج صورة داخل المستند؟',           a:'إدراج (Insert) ← صور 🖼️' },
+        { q:'ما امتداد ملفات مايكروسوفت وورد؟',       a:'.docx 📄' }
+      ],
+      link:'تعلّمنا كيف ننشئ مستندًا واحدًا وننسّقه… لكن ماذا لو احتجنا أن نرسل <b>المستند نفسه</b> إلى <b>٣٠ شخصًا</b> وكلٌّ باسمه؟ 🤔 هذا ما سنكتشفه اليوم!' },
+
+    /* 4) التهيئة - ماذا تتوقعين؟ */
+    { type:'predict', transition:'slide', tag:'التهيئة', strategy:'🔮 ماذا تتوقعين؟',
+      title:'موقف <span class="hl">محيّر!</span>',
+      who:'👩‍💼',
+      scenario:'طلبت منكِ المديرة كتابة <b>٣٥ دعوة</b> لأمهات الطالبات لحضور حفل التكريم، وكل دعوة يجب أن تحمل <b>اسم الأم</b> و<b>اسم ابنتها وصفّها</b>… ولديكِ حصة واحدة فقط! ⏰',
+      question:'صوّتي: كيف ستنجزين المهمة؟',
+      options:[
+        { e:'✍️', t:'أكتب ٣٥ مستندًا منفصلًا', s:'⏳ تقريبًا ٣ ساعات!' },
+        { e:'📋', t:'أنسخ الدعوة وأغيّر الاسم كل مرة', s:'😓 ساعة كاملة… وأخطاء محتملة' },
+        { e:'✨', t:'توجد طريقة ذكية؟!', s:'⚡ دقائق معدودة' }
+      ],
+      reveal:'✨ نعم! في وورد أداة سحرية تنجزها في دقائق… هيا نكتشفها!' },
+
+    /* 5) لاحظ واكتشف */
+    { type:'observe', transition:'fade', tag:'لاحظ واكتشف', strategy:'🔍 لاحظي واكتشفي',
+      title:'شاهدي <span class="hl">السحر</span> ثم أخبريني: ماذا لاحظتِ؟',
+      observations:['📄 نص الرسالة ثابت','🔄 الأسماء تتغيّر','📊 البيانات جاءت من جدول'] },
+
+    /* 6) العنوان */
+    { type:'title', transition:'zoom', tag:'عنوان الدرس' },
+
+    /* 7) الأهداف */
+    { type:'objectives', transition:'slide', tag:'أهداف الدرس', strategy:'🎯 أهدافنا اليوم',
+      title:'في نهاية الدرس <span class="hl">ستكونين قادرة على أن:</span>',
+      items:[
+        'تعرّفي مفهوم دمج المراسلات.',
+        'تعدّدي خطوات دمج المراسلات الست بالترتيب.',
+        'تستخدمي معالج دمج المراسلات خطوة بخطوة.',
+        'تنشئي قائمة مستلمين وتخصّصي حقولها.',
+        'تقدّري دور التقنية في توفير الوقت والجهد.'
+      ] },
+
+    /* 8) المفهوم (معادلة) */
+    { type:'concept', transition:'zoom', tag:'المفهوم', strategy:'🧩 اكتشفي المعادلة',
+      title:'ما هو <span class="hl">دمج المراسلات؟</span>',
+      boxes:[
+        { e:'📄', t:'مستند رئيسي', s:'نص ثابت للجميع' },
+        { e:'🗂️', t:'قاعدة بيانات', s:'قائمة المستلمين' },
+        { e:'💌', t:'رسائل مخصّصة', s:'لكل شخص رسالته باسمه', result:true }
+      ],
+      definition:'<b>دمج المراسلات الإلكترونية</b> هو إحدى عمليات معالجة النصوص التي تمكّنكِ من <b>دمج مستند مع ملف قاعدة بيانات</b>.',
+      info:'💡 معلومة: يمكنكِ استخدام دمج المراسلات لإنشاء رسائل مخصّصة أو مغلفات أو بطاقات أعمال.' },
+
+    /* 9) العصف الذهني */
+    { type:'brainstorm', transition:'fade', tag:'العصف الذهني', strategy:'💡 العصف الذهني',
+      title:'أين يمكن أن <span class="hl">نستخدمه؟</span>',
+      center:'أين نستخدم دمج المراسلات؟', centerEmoji:'💭',
+      ideas:[ {e:'🎉',t:'دعوات الحفلات'}, {e:'🏅',t:'شهادات التقدير'}, {e:'💐',t:'خطابات الشكر'}, {e:'✉️',t:'المغلفات'},
+              {e:'💼',t:'بطاقات الأعمال'}, {e:'🏷️',t:'بطاقات الأسماء'}, {e:'📢',t:'إشعارات أولياء الأمور'}, {e:'🎓',t:'شهادات التخرج'} ] },
+
+    /* 10) الخطوات الست */
+    { type:'steps', transition:'slide', tag:'خطوات دمج المراسلات', strategy:'🪜 ست خطوات للدمج',
+      title:'رحلة الدمج في <span class="hl">٦ خطوات</span>',
+      steps:[
+        { e:'📑', t:'تحديد نوع المستند',  d:'رسائل، مغلفات، تسميات…' },
+        { e:'📄', t:'تحديد مستند البداية', d:'نستخدم المستند الحالي' },
+        { e:'👥', t:'تحديد المستلمين',    d:'نكتب قائمة جديدة بالبيانات' },
+        { e:'✍️', t:'كتابة الرسالة',       d:'نُدرج الحقول في مكانها' },
+        { e:'👀', t:'معاينة الرسائل',      d:'نتأكد من كل رسالة' },
+        { e:'✅', t:'إتمام الدمج',         d:'نطبع أو نحفظ الرسائل' }
+      ] },
+
+    /* 11) محاكاة: فتح المعالج */
+    { type:'ribbonSim', transition:'zoom', tag:'تطبيق عملي ١', strategy:'🖱️ طبّقي بنفسك على السبورة',
+      title:'كيف نفتح <span class="hl">معالج دمج المراسلات؟</span>' },
+
+    /* 12) محاكاة المعالج: الخطوات 1-3 */
+    { type:'wizardSim', transition:'slide', tag:'تطبيق عملي ٢', strategy:'🧭 المعالج خطوة بخطوة',
+      title:'هيا نمشي مع <span class="hl">المعالج</span> خطوة بخطوة',
+      stages:[
+        { step:1, head:'تحديد نوع المستند', q:'ما نوع المستند الذي تعملين عليه؟',
+          options:['رسائل','رسائل البريد الإلكتروني','مغلفات','تسميات','دليل'], correct:0,
+          next:'التالي: مستند البداية',
+          hint:'نريد إرسال دعوة مكتوبة لزميلاتنا… اختاري «رسائل» ثم اضغطي «التالي»' },
+        { step:2, head:'تحديد مستند البداية', q:'كيف تريدين إعداد الرسائل؟',
+          options:['استخدام المستند الحالي','البدء من قالب','البدء من مستند موجود'], correct:0,
+          next:'التالي: تحديد المستلمين',
+          hint:'لقد كتبنا الدعوة بالفعل في هذا المستند… اختاري «استخدام المستند الحالي»' },
+        { step:3, head:'تحديد المستلمين', q:'اختاري قائمة المستلمين:',
+          options:['استخدام قائمة موجودة','التحديد من جهات اتصال Outlook','كتابة قائمة جديدة'], correct:2,
+          next:'إنشاء…',
+          hint:'ليس لدينا قائمة جاهزة… نريد أن نكتب أسماء زميلاتنا بأنفسنا!' }
+      ] },
+
+    /* 13) محاكاة: تخصيص الأعمدة */
+    { type:'fieldsSim', transition:'slide', tag:'تطبيق عملي ٣', strategy:'🛠️ تحدّي التخصيص',
+      title:'خصّصي <span class="hl">أعمدة قائمة العناوين</span>',
+      fields:['اللقب','الاسم الأول','اسم العائلة','اسم الشركة','سطر العنوان 1','سطر العنوان 2','المدينة','الولاية','الرمز البريدي','البلد أو المنطقة','هاتف المنزل','هاتف العمل','عنوان البريد الإلكتروني'],
+      keep:['الاسم الأول','اسم العائلة','المدينة'],
+      renameFrom:'المدينة', renameTo:'الصف' },
+
+    /* 14) محاكاة: تعبئة القائمة + المعاينة + إتمام الدمج */
+    { type:'listSim', transition:'zoom', tag:'تطبيق عملي ٤', strategy:'👩‍💻 طالبتان على السبورة',
+      title:'املئي القائمة… <span class="hl">وشاهدي الرسائل تُولد!</span>' },
+
+    /* ★) أسئلة مهارات التفكير العليا */
+    { type:'hots', transition:'slide', tag:'التفكير العليا', strategy:'🧠 أسئلة مهارات التفكير العليا',
+      title:'فكّري <span class="hl">بعمق</span>',
+      items:[
+        { level:'🔍 تحليل', q:'ما العلاقة بين المستند الرئيسي وقائمة المستلمين في دمج المراسلات؟',
+          a:'المستند يحتوي النص الثابت، والقائمة تحتوي البيانات المتغيرة، وحقول الدمج تربط بينهما.' },
+        { level:'⚖️ تقويم', q:'مدرسة تريد إرسال ٥ دعوات فقط. هل تنصحينها باستخدام دمج المراسلات؟ علّلي.',
+          a:'نعم إذا ستتكرر الدعوات أو تُحفظ القائمة لاحقًا؛ فالدمج يقلل الأخطاء ويوفّر الوقت مستقبلًا.' },
+        { level:'💡 إبداع', q:'اقترحي استخدامًا جديدًا لدمج المراسلات في مدرستكِ، مع ذكر الحقول المطلوبة.',
+          a:'مثال: بطاقات نتائج الطالبات بالحقول: الاسم، الصف، الدرجة، ملاحظة المعلمة.' }
+      ] },
+
+    /* ★) ربط التعلم بالحياة */
+    { type:'life', transition:'fade', tag:'في حياتي', strategy:'🌍 ربط التعلم بالحياة',
+      title:'كيف أستفيد من <span class="hl">دمج المراسلات</span> في حياتي؟',
+      items:[
+        { e:'🎂', t:'دعوة حفلتي', d:'أكتب دعوة واحدة وتخرج باسم كل صديقة تلقائيًا.' },
+        { e:'🛍️', t:'مشروعي الصغير', d:'بطاقة شكر مخصّصة لكل عميلة باسمها وطلبها.' },
+        { e:'🏫', t:'نادي المدرسة', d:'شهادات مشاركة لجميع العضوات في دقائق.' },
+        { e:'💼', t:'عملي مستقبلًا', d:'رسائل رسمية للموظفين أو العملاء دون تكرار الجهد.' }
+      ],
+      question:'شاركينا: متى تحتاجين أنتِ دمج المراسلات؟' },
+
+    /* 15) فكر زاوج شارك */
+    { type:'tps', transition:'slide', tag:'فكر - زاوج - شارك', strategy:'👭 فكّري – زاوجي – شاركي',
+      question:'لماذا يُفضَّل استخدام <span style="color:var(--p)">معالج دمج المراسلات</span> بدلًا من العمل يدويًا؟', qEmoji:'🤔',
+      phases:[ {e:'🤔',t:'فكّري',d:'بمفردكِ بصمت',sec:60}, {e:'👭',t:'زاوجي',d:'ناقشي زميلتكِ',sec:60}, {e:'📣',t:'شاركي',d:'أخبري الفصل',sec:90} ],
+      answer:'✅ لأنه يوجّهنا <b>خطوة بخطوة</b> لإكمال عملية الدمج بسهولة، ويقلّل الأخطاء، ويوفّر الوقت والجهد.' },
+
+    /* 16) التعلم التعاوني */
+    { type:'coop', transition:'slide', tag:'التعلم التعاوني', strategy:'🤝 التعلم التعاوني',
+      title:'مهمة المجموعات: <span class="hl">دعوة حفلتنا! 🎈</span>',
+      roles:[ {e:'👑',t:'القائدة',d:'تنظّم الوقت والأدوار'}, {e:'✍️',t:'الكاتبة',d:'تكتب نص الدعوة'},
+              {e:'🗂️',t:'مسؤولة البيانات',d:'تحدد الحقول وتعبّئها'}, {e:'🎤',t:'المتحدثة',d:'تعرض عمل المجموعة'} ],
+      tasks:[ 'اكتبن نص دعوة يبدأ بـ «عزيزتي …» واتركن مكان الاسم فارغًا.',
+              'حدّدن الحقول التي تحتجنها فقط (مثل: الاسم الأول، اسم العائلة).',
+              'املأن القائمة ببيانات ٣ صديقات مدعوّات.',
+              'اذكرن: ما الخطوات لإضافة حقل جديد أو حذف حقل؟' ],
+      seconds:300 },
+
+    /* ★) كتاب الطالبة */
+    { type:'book', transition:'slide', tag:'كتاب الطالبة', strategy:'📖 متابعة كتاب الطالبة',
+      title:'هيا إلى <span class="hl">الكتاب</span>', pages:'ص ٦٨ – ٧٧',
+      tasks:[
+        { t:'قراءة خطوات دمج المراسلات الست', p:'ص ٦٨' },
+        { t:'تتبّع خطوات المعالج بالصور', p:'ص ٦٩ – ٧٥' },
+        { t:'حل تدريب ١: عدد الخطوات وتفاصيلها', p:'ص ٧٦' },
+        { t:'حل تدريب ٢: في أي خطوة نضيف المستلمين؟', p:'ص ٧٦' },
+        { t:'تدريب ٣: قائمة عناوين لدعوة حفلة', p:'ص ٧٧', hw:true }
+      ] },
+
+    /* 17-19) أسئلة اختيار من متعدد */
+    { type:'mcq', transition:'zoom', tag:'سؤال ١', strategy:'✅ اختاري الإجابة الصحيحة', num:'السؤال الأول',
+      question:'من أي تبويب نبدأ عملية دمج المراسلات؟',
+      options:[ {e:'🏠',t:'الصفحة الرئيسية'}, {e:'➕',t:'إدراج'}, {e:'✉️',t:'مراسلات'}, {e:'👁️',t:'عرض'} ], correct:2,
+      explain:'من تبويب مراسلات ← بدء دمج المراسلات ← معالج دمج المراسلات خطوة بخطوة' },
+
+    { type:'mcq', transition:'zoom', tag:'سؤال ٢', strategy:'✅ اختاري الإجابة الصحيحة', num:'السؤال الثاني',
+      question:'في أي خطوة نضيف معلومات المستلمين؟',
+      options:[ {e:'1️⃣',t:'تحديد نوع المستند'}, {e:'2️⃣',t:'تحديد مستند البداية'}, {e:'3️⃣',t:'تحديد المستلمين'}, {e:'6️⃣',t:'إتمام الدمج'} ], correct:2,
+      explain:'في الخطوة الثالثة نكتب قائمة جديدة بأسماء المستلمين وبياناتهم.' },
+
+    { type:'mcq', transition:'zoom', tag:'سؤال ٣', strategy:'✅ اختاري الإجابة الصحيحة', num:'السؤال الثالث',
+      question:'لنحذف الحقول التي لا نحتاجها من قائمة العناوين نضغط على…',
+      options:[ {e:'➕',t:'إدخال جديد'}, {e:'🛠️',t:'تخصيص أعمدة'}, {e:'💾',t:'حفظ'}, {e:'👀',t:'معاينة الرسائل'} ], correct:1,
+      explain:'تخصيص أعمدة ← نختار الحقل ← حذف (ويمكن أيضًا إعادة التسمية أو الإضافة).' },
+
+    /* 20) صح أم خطأ */
+    { type:'tf', transition:'slide', tag:'صح أم خطأ', strategy:'⚖️ صح أم خطأ؟',
+      title:'صح <span class="hl">أم</span> خطأ؟',
+      items:[
+        { s:'دمج المراسلات يحتاج إلى إنشاء مستند منفصل لكل شخص.', a:false, ex:'بل مستند واحد يُدمج مع قائمة بيانات.' },
+        { s:'عدد خطوات معالج دمج المراسلات ست خطوات.', a:true, ex:'من تحديد نوع المستند حتى إتمام الدمج.' },
+        { s:'تظهر لوحة مهام دمج المراسلات على الجانب الأيسر من النص.', a:true, ex:'صحيح، تظهر اللوحة على الجانب الأيسر.' },
+        { s:'لا يمكن إعادة تسمية الحقول في قائمة العناوين.', a:false, ex:'يمكن ذلك بزر «إعادة تسمية» في تخصيص الأعمدة.' },
+        { s:'يمكن استخدام دمج المراسلات لإنشاء المغلفات وبطاقات الأعمال.', a:true, ex:'نعم، وكذلك الرسائل المخصّصة.' }
+      ] },
+
+    /* 21) تحدي الدقيقة */
+    { type:'challenge', transition:'zoom', tag:'تحدي الدقيقة', strategy:'⏱️ تحدي الدقيقة',
+      title:'رتّبي خطوات الدمج <span class="hl">قبل انتهاء الوقت!</span>',
+      order:['تحديد نوع المستند','تحديد مستند البداية','تحديد المستلمين','كتابة الرسالة','معاينة الرسائل','إتمام الدمج'],
+      seconds:60 },
+
+    /* ★) قياس قصير */
+    { type:'quiz', transition:'zoom', tag:'قياس قصير', strategy:'📊 قياس قصير',
+      title:'قياس قصير: <span class="hl">٥ أسئلة</span>',
+      items:[
+        { q:'دمج المراسلات يدمج المستند مع…', o:['صورة','ملف قاعدة بيانات','ملف صوتي','جدول محتويات'], c:1 },
+        { q:'عدد خطوات معالج دمج المراسلات:', o:['٣ خطوات','٤ خطوات','٦ خطوات','٨ خطوات'], c:2 },
+        { q:'الخطوة الأولى في المعالج هي:', o:['تحديد المستلمين','تحديد نوع المستند','إتمام الدمج','كتابة الرسالة'], c:1 },
+        { q:'لإنشاء قائمة مستلمين جديدة نختار:', o:['استخدام قائمة موجودة','كتابة قائمة جديدة','جهات اتصال Outlook','البدء من قالب'], c:1 },
+        { q:'لإضافة مستلم آخر إلى القائمة نضغط:', o:['حذف إدخال','إدخال جديد','تخصيص أعمدة','بحث'], c:1 }
+      ] },
+
+    /* 22) المراجعة - خريطة ذهنية */
+    { type:'summary', transition:'fade', tag:'مراجعة', strategy:'🗺️ الخريطة الذهنية',
+      title:'خلاصة <span class="hl">درسنا</span>',
+      center:'دمج المراسلات', centerEmoji:'✉️',
+      branches:[
+        { e:'🧩', t:'المفهوم',           d:'دمج مستند رئيسي مع ملف قاعدة بيانات لإنشاء رسائل مخصّصة.' },
+        { e:'🖱️', t:'الوصول للمعالج',    d:'مراسلات ← بدء دمج المراسلات ← معالج دمج المراسلات خطوة بخطوة.' },
+        { e:'🪜', t:'الخطوات الست',      d:'نوع المستند ← مستند البداية ← المستلمين ← كتابة الرسالة ← المعاينة ← إتمام الدمج.' },
+        { e:'🗂️', t:'قائمة المستلمين',   d:'كتابة قائمة جديدة ← تخصيص أعمدة (حذف / إعادة تسمية / إضافة) ← إدخال جديد ← حفظ.' }
+      ] },
+
+    /* ★) نشاط إثرائي (للمتميزات أو لمن تنهي مبكرًا) */
+    { type:'enrich', transition:'zoom', tag:'نشاط إثرائي', strategy:'🌟 نشاط إثرائي',
+      title:'تحدّيات <span class="hl">للمبدعات في الدمج</span>', badge:'🚀 للمتميزات',
+      cards:[
+        { level:1, e:'🏅', t:'شهادات تقدير بالدمج',
+          d:'صمّمي شهادة تقدير واحدة، وادمجيها لتخرج باسم كل طالبة.',
+          steps:['صمّمي الشهادة في وورد مع حد صفحة جميل.','ابدئي المعالج واختاري «رسائل».','اكتبي قائمة بـ ٥ طالبات (الاسم، المادة، التقدير).','أدرجي الحقول في الشهادة ثم عايني وأتمّي الدمج.'] },
+        { level:2, e:'📊', t:'من إكسل إلى وورد',
+          d:'بدلًا من كتابة القائمة يدويًا، استخدمي جدول بيانات جاهزًا.',
+          steps:['أنشئي جدولًا في Excel: الاسم الأول، اسم العائلة، الصف.','احفظي الملف.','في الخطوة ٣ اختاري «استخدام قائمة موجودة» ← استعراض.','حدّدي ملف Excel وأكملي الدمج.'] },
+        { level:3, e:'🧠', t:'رسالة ذكية بقاعدة «إذا… عندئذ»',
+          d:'اجعلي الرسالة تكتب «عزيزتي» أو «عزيزي» تلقائيًا حسب المستلم.',
+          steps:['أضيفي حقلًا جديدًا باسم «الجنس» في قائمة العناوين.','من تبويب مراسلات ← قواعد ← If…Then…Else.','إذا كان الجنس = أنثى اكتبي «عزيزتي»، وإلا «عزيزي».','عايني الرسائل وتأكدي من النتيجة.'] }
+      ],
+      note:'💡 هل تعلمين؟ يمكن إرسال الرسائل المدموجة مباشرة بالبريد الإلكتروني باختيار «رسائل البريد الإلكتروني» في الخطوة الأولى.' },
+
+    /* 23) التقييم الفوري - بطاقة الخروج */
+    { type:'exit', transition:'slide', tag:'التقييم الفوري', strategy:'🎟️ بطاقة الخروج',
+      title:'قبل أن نغادر… <span class="hl">قيّمي نفسكِ</span>',
+      prompts:[ {e:'✏️',t:'شيء تعلّمتُه اليوم',bg:'var(--pl)',c:'var(--p2)'},
+                {e:'💡',t:'خطوة أستطيع تطبيقها',bg:'var(--mintl)',c:'#115E59'},
+                {e:'❓',t:'سؤال ما زال في ذهني',bg:'var(--goldl)',c:'#7A4A00'} ],
+      faces:[ {e:'🤩',t:'فهمتُ تمامًا'}, {e:'🙂',t:'فهمتُ أغلبه'}, {e:'🤔',t:'أحتاج مساعدة'} ] },
+
+    /* 24) الختام */
+    { type:'closing', transition:'zoom', tag:'الختام',
+      title:'شكرًا <span>لتفاعلكنّ</span> 💜',
+      quote:'«التقنية تختصر الجهد… وإبداعكِ يصنع الفرق» 💜',
+      homework:'الواجب: حلّ تدريب ٣ صفحة ٧٧ — أنشئي قائمة عناوين لدعوة صديقاتكِ إلى حفلة 🎈',
+      button:'صفّقن لأنفسكنّ 👏' }
+  ]
+};
+/* ---- بيانات حقيبة المعلمة (خطة الدرس، ورقة العمل، بنك الأسئلة، القياس، الإثراء، الشواهد) — يمكن تعديلها هنا ---- */
+const KIT = {
+ "common": {
+  "subject": "المهارات الرقمية",
+  "grade": "الأول المتوسط",
+  "teacher": "أ. رحاب الحربي",
+  "school": "متوسطة مناهل البكيرية بنات"
+ },
+ "lesson": {
+  "file": "حقيبة درس دمج المراسلات",
+  "unit": "الوحدة الثانية",
+  "lesson": "الدرس الثاني: دمج المراسلات",
+  "pages": "٦٨ – ٧٧",
+  "html": "index.html",
+  "prev": "التنسيق المتقدم (الفقرات، الحدود، الخط، الصور، صيغ الحفظ)",
+  "objectives": [
+   "تعرّف مفهوم دمج المراسلات.",
+   "تعدّد خطوات دمج المراسلات الست بالترتيب.",
+   "تستخدم معالج دمج المراسلات خطوة بخطوة.",
+   "تنشئ قائمة مستلمين وتخصّص حقولها (حذف، إعادة تسمية، إضافة).",
+   "تعبّئ قائمة العناوين وتعاين الرسائل وتتم الدمج.",
+   "تقدّر دور التقنية في توفير الوقت والجهد."
+  ],
+  "strategies": [
+   "استراتيجية الأسئلة",
+   "ماذا تتوقعين؟ (التهيئة)",
+   "لاحظ واكتشف",
+   "العصف الذهني",
+   "التعلّم بالمحاكاة والتطبيق العملي على السبورة",
+   "فكّر – زاوج – شارك",
+   "التعلّم التعاوني",
+   "تحدي الدقيقة",
+   "التقويم الفوري (بطاقة الخروج)"
+  ],
+  "procedures": [
+   [
+    "التحضير وميثاق الحصة",
+    "١ – ٢",
+    "تسجيل الحضور من كشف العرض، التذكير بميثاق الحصة.",
+    "—",
+    "٢ د"
+   ],
+   [
+    "مراجعة الدرس السابق والربط",
+    "٣",
+    "بطاقات أسئلة قابلة للقلب، ثم الربط: كيف نرسل المستند نفسه لـ ٣٠ شخصًا؟",
+    "الأسئلة + القرعة",
+    "٣ د"
+   ],
+   [
+    "التهيئة",
+    "٤ – ٥",
+    "موقف «٣٥ دعوة» مع تصويت، ثم عرض سحر الدمج بأسماء الطالبات.",
+    "ماذا تتوقعين؟ + لاحظ واكتشف",
+    "٣ د"
+   ],
+   [
+    "العنوان والأهداف",
+    "٦ – ٧",
+    "عرض العنوان وكشف الأهداف تدريجيًا.",
+    "—",
+    "٢ د"
+   ],
+   [
+    "المفهوم والعصف الذهني",
+    "٨ – ٩",
+    "معادلة: مستند + قاعدة بيانات = رسائل مخصّصة، واستخدامات الدمج.",
+    "العصف الذهني",
+    "٣ د"
+   ],
+   [
+    "العرض والتطبيق العملي",
+    "١٠ – ١٤",
+    "الخطوات الست، فتح المعالج، الخطوات ١–٣، تخصيص الأعمدة، تعبئة القائمة والمعاينة وإتمام الدمج.",
+    "المحاكاة على السبورة",
+    "١٤ د"
+   ],
+   [
+    "التفكير العليا والربط بالحياة",
+    "١٥ – ١٦",
+    "أسئلة تحليل وتقويم وإبداع، ومواقف حياتية.",
+    "أسئلة التفكير العليا",
+    "٣ د"
+   ],
+   [
+    "فكّر – زاوج – شارك",
+    "١٧",
+    "لماذا يُفضَّل استخدام معالج دمج المراسلات؟",
+    "فكّر – زاوج – شارك",
+    "٣ د"
+   ],
+   [
+    "العمل التعاوني والكتاب",
+    "١٨ – ١٩",
+    "مهمة دعوة الحفلة بأدوار، ومتابعة كتاب الطالبة ص ٦٨ – ٧٧.",
+    "التعلّم التعاوني",
+    "٥ د"
+   ],
+   [
+    "التقويم",
+    "٢٠ – ٢٥",
+    "٣ أسئلة اختيار، صح أم خطأ، تحدي ترتيب الخطوات، قياس قصير.",
+    "تقويم متنوع",
+    "٥ د"
+   ],
+   [
+    "الغلق",
+    "٢٦ – ٢٩",
+    "خريطة ذهنية، نشاط إثرائي للمتميزات، بطاقة الخروج، الواجب.",
+    "الخريطة الذهنية + التقويم الفوري",
+    "٢ د"
+   ]
+  ],
+  "homework": "تدريب ٣ صفحة ٧٧: إنشاء قائمة عناوين لدعوة الصديقات إلى حفلة، والإجابة عن أسئلته.",
+  "enrich": [
+   [
+    "شهادات تقدير بالدمج",
+    "تصميم شهادة واحدة ودمجها مع قائمة ٥ طالبات (الاسم، المادة، التقدير)."
+   ],
+   [
+    "من إكسل إلى وورد",
+    "إنشاء القائمة في Excel ثم اختيار «استخدام قائمة موجودة» في الخطوة ٣."
+   ],
+   [
+    "رسالة ذكية",
+    "قاعدة If…Then…Else لكتابة «عزيزتي/عزيزي» تلقائيًا حسب حقل الجنس."
+   ]
+  ],
+  "worksheet": {
+   "order": [
+    "إتمام الدمج",
+    "تحديد المستلمين",
+    "تحديد نوع المستند",
+    "معاينة الرسائل",
+    "تحديد مستند البداية",
+    "كتابة الرسالة"
+   ],
+   "tps": "لماذا يُفضَّل استخدام معالج دمج المراسلات لتطبيق دمج المراسلات؟",
+   "group": [
+    "اكتبن نص دعوة يبدأ بـ «عزيزتي …» واتركن مكان الاسم فارغًا.",
+    "حدّدن الحقول التي تحتجنها فقط (مثل: الاسم الأول، اسم العائلة).",
+    "املأن القائمة ببيانات ٣ صديقات مدعوّات.",
+    "اذكرن: ما الخطوات لإضافة حقل جديد أو حذف حقل؟"
+   ]
+  },
+  "mcq": [
+   [
+    "دمج المراسلات يدمج المستند مع:",
+    [
+     "صورة",
+     "ملف قاعدة بيانات",
+     "ملف صوتي",
+     "جدول محتويات"
+    ],
+    1
+   ],
+   [
+    "عدد خطوات إنشاء مستندات دمج المراسلات:",
+    [
+     "٣",
+     "٤",
+     "٦",
+     "٨"
+    ],
+    2
+   ],
+   [
+    "نبدأ دمج المراسلات من تبويب:",
+    [
+     "الشريط الرئيسي",
+     "إدراج",
+     "مراسلات",
+     "عرض"
+    ],
+    2
+   ],
+   [
+    "تظهر لوحة مهام دمج المراسلات على:",
+    [
+     "الجانب الأيسر من النص",
+     "الجانب الأيمن",
+     "أعلى الصفحة",
+     "أسفل الصفحة"
+    ],
+    0
+   ],
+   [
+    "في الخطوة الأولى نختار نوع المستند، وفي مثال الدرس نختار:",
+    [
+     "مغلفات",
+     "تسميات",
+     "رسائل",
+     "دليل"
+    ],
+    2
+   ],
+   [
+    "في الخطوة الثانية نختار:",
+    [
+     "البدء من قالب",
+     "استخدام المستند الحالي",
+     "البدء من مستند موجود",
+     "كتابة قائمة جديدة"
+    ],
+    1
+   ],
+   [
+    "نضيف معلومات المستلمين في الخطوة:",
+    [
+     "الأولى",
+     "الثانية",
+     "الثالثة",
+     "السادسة"
+    ],
+    2
+   ],
+   [
+    "لحذف الحقول غير المطلوبة من قائمة العناوين نضغط:",
+    [
+     "إدخال جديد",
+     "تخصيص أعمدة",
+     "بحث",
+     "موافق"
+    ],
+    1
+   ],
+   [
+    "لإضافة مستلم جديد في نافذة قائمة عناوين جديدة نضغط:",
+    [
+     "حذف إدخال",
+     "إدخال جديد",
+     "إعادة تسمية",
+     "إلغاء"
+    ],
+    1
+   ],
+   [
+    "الخطوة الأخيرة في معالج دمج المراسلات:",
+    [
+     "معاينة الرسائل",
+     "كتابة الرسالة",
+     "إتمام الدمج",
+     "تحديد المستلمين"
+    ],
+    2
+   ]
+  ],
+  "tf": [
+   [
+    "معالج دمج المراسلات يوجّه المستخدم خطوة بخطوة.",
+    true
+   ],
+   [
+    "يجب إنشاء مستند منفصل لكل مستلم عند استخدام دمج المراسلات.",
+    false,
+    "مستند واحد يُدمج مع قائمة بيانات"
+   ],
+   [
+    "يمكن إعادة تسمية حقل «المدينة» إلى «الصف».",
+    true
+   ],
+   [
+    "يمكن استخدام دمج المراسلات لإنشاء مغلفات وبطاقات أعمال.",
+    true
+   ],
+   [
+    "تُحفظ قائمة العناوين تلقائيًا دون ظهور نافذة حفظ.",
+    false,
+    "تظهر نافذة حفظ قائمة العناوين"
+   ],
+   [
+    "معاينة الرسائل هي الخطوة الخامسة.",
+    true
+   ],
+   [
+    "كتابة الرسالة تسبق تحديد المستلمين.",
+    false,
+    "تحديد المستلمين هو الخطوة الثالثة وكتابة الرسالة الرابعة"
+   ],
+   [
+    "يمكن إضافة حقل جديد إلى قائمة العناوين بزر «إضافة».",
+    true
+   ]
+  ],
+  "fill": [
+   [
+    "دمج المراسلات هو إحدى عمليات ________ التي تمكّن من دمج مستند مع ملف قاعدة بيانات.",
+    "معالجة النصوص"
+   ],
+   [
+    "نختار «معالج دمج المراسلات ________» من قائمة بدء دمج المراسلات.",
+    "خطوة بخطوة"
+   ],
+   [
+    "لإنشاء قائمة مستلمين نضغط «كتابة قائمة جديدة» ثم ________.",
+    "إنشاء (Create)"
+   ],
+   [
+    "لإضافة حقل جديد إلى قائمة العناوين نضغط ________.",
+    "إضافة (Add)"
+   ],
+   [
+    "تظهر نافذة ________ بعد إدخال بيانات المستلمين والضغط على موافق.",
+    "حفظ قائمة العناوين"
+   ]
+  ],
+  "essay": [
+   [
+    "عدّدي خطوات دمج المراسلات الست بالترتيب.",
+    "تحديد نوع المستند ← تحديد مستند البداية ← تحديد المستلمين ← كتابة الرسالة ← معاينة الرسائل ← إتمام الدمج."
+   ],
+   [
+    "كيف تخصّصين أعمدة قائمة العناوين لتبقى: الاسم الأول، اسم العائلة، الصف؟",
+    "تخصيص أعمدة ← حذف الحقول الأخرى واحدًا تلو الآخر ← تحديد المدينة ← إعادة تسمية إلى الصف ← موافق ← موافق."
+   ],
+   [
+    "لماذا يُفضَّل استخدام معالج دمج المراسلات؟",
+    "لأنه يوجّه المستخدم خطوة بخطوة لإكمال الدمج بسهولة، ويقلل الأخطاء، ويوفّر الوقت والجهد."
+   ]
+  ],
+  "hots": [
+   [
+    "تحليل",
+    "ما العلاقة بين المستند الرئيسي وقائمة المستلمين في دمج المراسلات؟",
+    "المستند يحوي النص الثابت، والقائمة تحوي البيانات المتغيرة، والحقول تربط بينهما."
+   ],
+   [
+    "تقويم",
+    "مدرسة تريد إرسال ٥ دعوات فقط. هل تنصحينها بدمج المراسلات؟ علّلي.",
+    "نعم إذا ستتكرر الدعوات أو تُحفظ القائمة؛ فالدمج يقلل الأخطاء ويوفّر الوقت."
+   ],
+   [
+    "إبداع",
+    "اقترحي استخدامًا جديدًا لدمج المراسلات في مدرستكِ مع ذكر الحقول المطلوبة.",
+    "مثال: بطاقات نتائج الطالبات (الاسم، الصف، الدرجة، الملاحظة)."
+   ]
+  ],
+  "quizMcq": [
+   0,
+   1,
+   2,
+   6,
+   9
+  ],
+  "quizTf": [
+   0,
+   1,
+   2,
+   4,
+   6
+  ]
+ },
+ "evidence": [
+  [
+   "التخطيط للتدريس",
+   [
+    [
+     "إعداد الخطط الأسبوعية وفق الخطط الجديدة",
+     "📁 خطة الدرس في حقيبة كل درس (أهداف، استراتيجيات، إجراءات بالزمن)."
+    ],
+    [
+     "متمكن من المادة العلمية ويحضر لها جيدًا",
+     "🖥️ شرائح التطبيق العملي (محاكاة وورد) + 📁 بنك الأسئلة ونماذج الإجابة."
+    ],
+    [
+     "يتقن صياغة أهدافه التعليمية",
+     "🖥️ شريحة الأهداف + 📁 الأهداف السلوكية في الخطة."
+    ],
+    [
+     "مطابقة الإعداد لما يقدم في الفصل",
+     "📁 جدول الإجراءات في الخطة مرتبط بأرقام الشرائح."
+    ],
+    [
+     "توفر الحقيبة التدريسية",
+     "🖥️ العرضان التفاعليان + 📁 حقيبتا الدرسين (خطة، ورقة عمل، بنك، قياس، سجل، إثراء)."
+    ]
+   ]
+  ],
+  [
+   "استراتيجيات التدريس",
+   [
+    [
+     "استخدام الاستراتيجيات المناسبة للدرس",
+     "🖥️ العصف الذهني، فكّر–زاوج–شارك، التعلّم التعاوني، لاحظ واكتشف، تحدي الدقيقة."
+    ],
+    [
+     "إعداد أوراق العمل وفق الاستراتيجية",
+     "📁 ورقة العمل في الحقيبة (فكّري–زاوجي–شاركي + مهمة تعاونية)."
+    ],
+    [
+     "يلتزم باستخدام اللغة العربية الفصحى",
+     "🖥️ جميع نصوص العرض والتعليمات بالفصحى."
+    ]
+   ]
+  ],
+  [
+   "دعم التعلم",
+   [
+    [
+     "استخدام التقنية الحديثة أداةً للتوضيح والتحفيز",
+     "🖥️ عرض تفاعلي بمحاكاة وورد، أصوات تحفيز، مؤقتات، لوحة نقاط."
+    ],
+    [
+     "استخدام ومتابعة كتاب الطالب",
+     "🖥️ شريحة «كتاب الطالبة» بمهام وصفحات + 📁 عمود متابعة الكتاب في سجل الأداء."
+    ],
+    [
+     "تشجيع الطلاب على الاستزادة من المعرفة (الإثراء)",
+     "🖥️ شريحة النشاط الإثرائي + 📁 بطاقة النشاط الإثرائي."
+    ],
+    [
+     "قدرة المعلم على غلق وإنهاء الدرس",
+     "🖥️ الخريطة الذهنية + بطاقة الخروج + الختام والواجب."
+    ]
+   ]
+  ],
+  [
+   "إدارة الصف",
+   [
+    [
+     "يضبط الصف ويديره بكفاءة",
+     "🖥️ ميثاق الحصة، كشف الحضور، القرعة، لوحة نقاط المجموعات."
+    ],
+    [
+     "تهيئة البيئة الصفية وإدارة وقت التعلم",
+     "🖥️ المؤقتات في الأنشطة + 📁 توزيع الزمن في الخطة."
+    ]
+   ]
+  ],
+  [
+   "الواجبات",
+   [
+    [
+     "متابعة تصويب وتصحيح دفاتر وكتب الطلاب",
+     "🖥️ الواجب في شريحة الختام + 📁 أعمدة الكتاب والواجب في السجل. 📌 تصحيح الكتب وتوقيعها دوريًا."
+    ]
+   ]
+  ],
+  [
+   "دعم المتعلمين",
+   [
+    [
+     "تشجيع الطلاب على التعبير عن حاجاتهم وآرائهم",
+     "🖥️ العصف الذهني، فكّر–زاوج–شارك، بطاقة الخروج والتقييم الذاتي."
+    ],
+    [
+     "استخدام التحفيز بأنواعه",
+     "🖥️ التصفيق، النجوم الفردية، نقاط المجموعات، الاحتفال بالإجابة الصحيحة."
+    ],
+    [
+     "دعم ما تعلمه الطلاب في حياتهم",
+     "🖥️ شريحة «في حياتي» + سؤال الإبداع في التفكير العليا."
+    ]
+   ]
+  ],
+  [
+   "التقويم",
+   [
+    [
+     "استخدام أساليب متنوعة في التقويم",
+     "🖥️ اختيار من متعدد، صح/خطأ، تحدي الدقيقة، قياس قصير، بطاقة خروج."
+    ],
+    [
+     "الإسهام في بناء بنك الأسئلة لمادة التخصص",
+     "📁 بنك أسئلة لكل درس (اختيار، صح/خطأ، إكمال، مقالي، تفكير عليا) مع نموذج إجابة."
+    ],
+    [
+     "يسأل أسئلة مثيرة لمهارات التفكير العليا",
+     "🖥️ شريحة التفكير العليا (تحليل – تقويم – إبداع)."
+    ],
+    [
+     "مستوى أداء الطلاب (قياس قصير – تحصيلي – نهائي)",
+     "🖥️ القياس القصير + 📁 القياس الورقي وسجل النتائج. 📌 نتائج التحصيلي والنهائي من نظام نور."
+    ]
+   ]
+  ],
+  [
+   "الانضباط الإداري",
+   [
+    [
+     "الالتزام بالدوام",
+     "📌 سجل الحضور والانصراف."
+    ],
+    [
+     "الالتزام بالزي الرسمي",
+     "📌 ملاحظة الإدارة."
+    ],
+    [
+     "التفاعل وتفعيل وسائل التواصل",
+     "📌 صور من التواصل مع أولياء الأمور وقنوات الفصل."
+    ],
+    [
+     "تفعيل منصة مدرستي",
+     "📌 تقرير الدروس والواجبات المنشورة (يمكن رفع العرضين وأوراق العمل)."
+    ],
+    [
+     "التفاعل الإيجابي مع التوجيهات",
+     "📌 توقيع التعاميم والتنفيذ."
+    ],
+    [
+     "الالتزام بالإشراف اليومي والصلاة مع الطالبات",
+     "📌 جدول الإشراف والمناوبة."
+    ]
+   ]
+  ],
+  [
+   "النشاط",
+   [
+    [
+     "تنفيذ ما يسند إليه من مهام (نشاط صفي ولاصفي)",
+     "🖥️ النشاط الإثرائي والتعاوني (صفي) + 📌 تقرير نشاط لاصفي."
+    ],
+    [
+     "المشاركة الفاعلة في برامج ونشاطات المدرسة",
+     "📌 صور وشهادات مشاركة."
+    ]
+   ]
+  ],
+  [
+   "الرخصة المهنية",
+   [
+    [
+     "التسجيل في موقع قياس / دخول الاختبار / الحصول على الرخصة",
+     "📌 إشعار التسجيل أو شهادة الرخصة."
+    ]
+   ]
+  ],
+  [
+   "السلوك العام",
+   [
+    [
+     "العلاقة مع الإدارة والزملاء والإشراف والطالبات",
+     "📌 خطابات شكر."
+    ],
+    [
+     "رضا أولياء الأمور",
+     "📌 استبانة رضا أو رسائل شكر."
+    ]
+   ]
+  ],
+  [
+   "منجزات المعلم",
+   [
+    [
+     "المستهدف النوعي / الجهد الإضافي",
+     "🖥️ تصميم عروض تفاعلية بمحاكاة وورد وقرعة وتحفيز (جهد إضافي نوعي)."
+    ],
+    [
+     "الجوائز",
+     "📌 شهادات الجوائز إن وجدت."
+    ],
+    [
+     "النمو المهني (٢٠ ساعة منها ٨ في التخصص)",
+     "📌 شهادات الدورات والبرامج التدريبية."
+    ]
+   ]
+  ],
+  [
+   "ملف الإنجاز",
+   [
+    [
+     "استمارة خارجية",
+     "📌 ترفق جميع الشواهد أعلاه مرتبة حسب المجالات."
+    ]
+   ]
+  ]
+ ]
+};
+/* ======================= نهاية الإعدادات ======================= */
+
+
+
+/* ==================================================================
+   🔊 الأصوات (Web Audio API) — بدون أي ملفات خارجية
+   ================================================================== */
+const Sound = {
+  ctx: null,
+  get(){ if(!this.ctx){ const AC = window.AudioContext||window.webkitAudioContext; if(AC) this.ctx=new AC(); }
+         if(this.ctx && this.ctx.state==='suspended') this.ctx.resume(); return this.ctx; },
+  noise(ctx){ // مخزن ضوضاء بيضاء قصير لتكوين صوت التصفيق
+    if(this._nb) return this._nb;
+    const len = ctx.sampleRate*0.2, b = ctx.createBuffer(1,len,ctx.sampleRate), d=b.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    return this._nb=b;
+  },
+  // تصفيق جماعي قصير (~1.6 ثانية)
+  clap(){
+    const ctx=this.get(); if(!ctx) return;
+    const t0=ctx.currentTime, master=ctx.createGain(); master.gain.value=0.9; master.connect(ctx.destination);
+    const people=6;
+    for(let p=0;p<people;p++){
+      let t=t0+Math.random()*0.12; const rate=0.13+Math.random()*0.06;
+      while(t<t0+1.5){
+        const src=ctx.createBufferSource(); src.buffer=this.noise(ctx);
+        const bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=900+Math.random()*1600; bp.Q.value=0.9;
+        const g=ctx.createGain(); const fade = 1-Math.max(0,(t-t0-0.9)/0.6);
+        g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.35*fade+0.001,t+0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001,t+0.09+Math.random()*0.04);
+        src.connect(bp); bp.connect(g); g.connect(master); src.start(t, Math.random()*0.1, 0.14);
+        t+=rate+Math.random()*0.05;
+      }
+    }
+  },
+  tone(freq,start,dur,type='triangle',vol=0.22){
+    const ctx=this.get(); if(!ctx) return;
+    const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type; o.frequency.value=freq;
+    const t=ctx.currentTime+start; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(ctx.destination); o.start(t); o.stop(t+dur+0.05);
+  },
+  success(){ [523,659,784,1047].forEach((f,i)=>this.tone(f,i*0.1,0.35)); },
+  wrong(){ this.tone(330,0,0.22,'sine',0.18); this.tone(262,0.16,0.3,'sine',0.16); },
+  click(){ this.tone(880,0,0.07,'sine',0.08); },
+  tick(){ this.tone(1200,0,0.05,'square',0.05); },
+  bell(){ [880,1175,880].forEach((f,i)=>this.tone(f,i*0.18,0.5,'sine',0.2)); }
+};
+
+/* ==================================================================
+   ✨ التأثيرات البصرية: تصفيق متطاير + احتفال (Confetti)
+   ================================================================== */
+const fx = document.getElementById('fx');
+function clapFx(fromEl){
+  Sound.clap();
+  let x=innerWidth/2, y=innerHeight-80;
+  if(fromEl && fromEl.getBoundingClientRect){ const r=fromEl.getBoundingClientRect(); if(r.width){ x=r.left+r.width/2; y=r.top; } }
+  for(let i=0;i<16;i++){
+    const s=document.createElement('span'); s.className='clap-fly'; s.textContent=['👏','👏','👏','✨','💜'][i%5];
+    s.style.left=(x-23)+'px'; s.style.top=(y-23)+'px'; fx.appendChild(s);
+    const dx=(Math.random()-.5)*420, dy=-(260+Math.random()*420), rot=(Math.random()-.5)*60, sc=0.7+Math.random()*0.8;
+    s.animate([{transform:'translate(0,0) scale(.4)',opacity:0},{transform:`translate(${dx*.3}px,${dy*.3}px) scale(${sc})`,opacity:1,offset:.2},
+               {transform:`translate(${dx}px,${dy}px) scale(${sc}) rotate(${rot}deg)`,opacity:0}],
+              {duration:1500+Math.random()*700,delay:i*45,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}).onfinish=()=>s.remove();
+  }
+}
+function confetti(){
+  const colors=['#7C3AED','#A78BFA','#0FB5A6','#F5A524','#EC4899','#FFFFFF'];
+  for(let i=0;i<90;i++){
+    const c=document.createElement('div'); c.className='conf'; c.style.background=colors[i%colors.length];
+    c.style.left=(Math.random()*innerWidth)+'px'; c.style.top='-30px'; fx.appendChild(c);
+    const dx=(Math.random()-.5)*300, rot=Math.random()*720;
+    c.animate([{transform:'translate(0,0) rotate(0)'},{transform:`translate(${dx}px,${innerHeight+60}px) rotate(${rot}deg)`}],
+              {duration:1800+Math.random()*1500,delay:Math.random()*300,easing:'cubic-bezier(.3,.6,.4,1)',fill:'forwards'}).onfinish=()=>c.remove();
+  }
+}
+function celebrate(){ Sound.success(); confetti(); }
+
+/* ==================================================================
+   🧰 أدوات مساعدة
+   ================================================================== */
+const $  =(s,r=document)=>r.querySelector(s);
+const $$ =(s,r=document)=>[...r.querySelectorAll(s)];
+const ar = n => String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);           // تحويل الأرقام للعربية
+const shuffle = a => { a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const chip = d => d.strategy ? `<div class="chip a" style="--i:0"><span class="dot"></span>${d.strategy}</div>` : '';
+function shake(el){ el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+/* تعبئة الرسالة بقيم صف من البيانات */
+function fillLetter(row, fields, mini){
+  return `<div class="letter ${mini?'mini':''}"><span class="stamp">💌</span>` + CONFIG.merge.template.map(line=>
+    '<div>'+line.replace(/\{([^}]+)\}/g,(m,f)=>{ const i=fields.indexOf(f); const v=row&&i>-1?row[i]:'';
+      return v ? `<span class="fld">${v}</span>` : `<span class="fld empty">«${f}»</span>`; })+'</div>').join('') + '</div>';
+}
+
+/* مؤقت دائري قابل لإعادة الاستخدام */
+function timerHTML(sec){
+  const C=2*Math.PI*64;
+  return `<div class="timer" data-sec="${sec}">
+    <div class="t-ring"><svg width="150" height="150"><circle cx="75" cy="75" r="64" fill="none" stroke="#EDE9FE" stroke-width="12"/>
+      <circle class="t-bar" cx="75" cy="75" r="64" fill="none" stroke="#7C3AED" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="0"/></svg>
+      <div class="t-num">0:00</div></div>
+    <div class="col" style="gap:10px"><button class="btn sm t-start">▶ ابدئي</button><button class="btn sm soft t-reset">↺ إعادة</button></div></div>`;
+}
+function makeTimer(root, slideIdx, onEnd){
+  const el=$('.timer',root), num=$('.t-num',el), bar=$('.t-bar',el), C=2*Math.PI*64;
+  let total=+el.dataset.sec, left=total, id=null;
+  const draw=()=>{ num.textContent=Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
+    bar.style.strokeDashoffset=C*(1-left/total); el.classList.toggle('low',left<=10&&left>0); };
+  const stop=()=>{ clearInterval(id); id=null; $('.t-start',el).textContent='▶ ابدئي'; };
+  const api={
+    start(){ if(id){ stop(); return; } if(left<=0) left=total; $('.t-start',el).textContent='⏸ إيقاف';
+      id=setInterval(()=>{ left--; draw();
+        if(left<=5 && left>0 && cur===slideIdx) Sound.tick();
+        if(left<=0){ stop(); if(cur===slideIdx) Sound.bell(); onEnd&&onEnd(); } },1000); },
+    reset(sec){ stop(); if(sec) total=sec; left=total; draw(); },
+    running:()=>!!id, stop
+  };
+  $('.t-start',el).onclick=()=>api.start(); $('.t-reset',el).onclick=()=>api.reset(); draw();
+  return api;
+}
+
+/* ==================================================================
+   🎨 قوالب الشرائح (كل نوع له دالة رسم + دالة تفعيل)
+   ================================================================== */
+/* ==================================================================
+   💾 الحفظ في المتصفح (localStorage)
+   يحفظ: الأسماء، الحضور (لليوم الحالي)، النجوم، نقاط المجموعات، القرعة،
+         الفصل والحصة، الأصوات، الأفكار، قائمة المستلمين، وآخر شريحة.
+   ================================================================== */
+const Store = {
+  key: 'mail-merge-lesson-v1', data: {},
+  load(){ try{ this.data = JSON.parse(localStorage.getItem(this.key)) || {}; }catch(e){ this.data = {}; } },
+  save(){ try{ localStorage.setItem(this.key, JSON.stringify(this.data)); }catch(e){} },
+  get(k, d){ return (k in this.data) ? this.data[k] : d; },
+  set(k, v){ this.data[k] = v; this.save(); },
+  clear(){ this.data = {}; try{ localStorage.removeItem(this.key); }catch(e){} }
+};
+Store.load();
+/* بيانات الفصل المشتركة بين جميع ملفات الدروس (الكشف، الحضور، النجوم) */
+const ClassStore = { ...Store, key: 'digital-skills-class-v1', data: {} };
+ClassStore.load();
+['roster','rosterSrc','absent','stars'].forEach(k => { if(!(k in ClassStore.data) && (k in Store.data)) ClassStore.set(k, Store.data[k]); });
+const today = () => new Date().toLocaleDateString('en-CA');
+
+/* 👩‍🎓 قائمة الطالبات + الحضور + النجوم */
+const Roster = {
+  src: JSON.stringify(CONFIG.students || []),
+  list: [], absent: [], stars: {},
+  init(){
+    const saved = ClassStore.get('roster', null);
+    // إذا عدّلتِ الأسماء في CONFIG تُعتمد القائمة الجديدة تلقائيًا
+    this.list = (saved && ClassStore.get('rosterSrc') === this.src) ? saved : [...(CONFIG.students || [])];
+    const ab = ClassStore.get('absent', null);
+    this.absent = (ab && ab.date === today()) ? ab.names.filter(n => this.list.includes(n)) : [];   // الغياب يتصفّر كل يوم جديد
+    this.stars = ClassStore.get('stars', {});
+  },
+  saveList(){ ClassStore.set('roster', this.list); ClassStore.set('rosterSrc', this.src); },
+  saveAbsent(){ ClassStore.set('absent', { date: today(), names: this.absent }); },
+  present(){ return this.list.filter(n => !this.absent.includes(n)); },
+  toggle(n){ const i = this.absent.indexOf(n); i > -1 ? this.absent.splice(i, 1) : this.absent.push(n); this.saveAbsent(); updatePresence(); },
+  star(n, d = 1){ this.stars[n] = Math.max(0, (this.stars[n] || 0) + d); ClassStore.set('stars', this.stars); },
+  add(n){ n = n.trim(); if(n && !this.list.includes(n)){ this.list.push(n); this.saveList(); updatePresence(); } },
+  remove(n){ this.list = this.list.filter(x => x !== n); this.absent = this.absent.filter(x => x !== n); this.saveList(); this.saveAbsent(); updatePresence(); }
+};
+Roster.init();
+
+/* الاسم المختصر: الاسم الأول + العائلة (بدون بنت/بن) */
+function nameParts(n){ const w = n.trim().split(/\s+/).filter(x => x !== 'بنت' && x !== 'بن'); return [w[0] || '', w.length > 1 ? w[w.length - 1] : '']; }
+function shortName(n){ return nameParts(n).join(' ').trim(); }
+function clsName(){ return (Store.get('prep', {}).className) || CONFIG.lesson.className; }
+/* صفوف بيانات من أسماء طالبات عشوائيات (لشرائح الدمج) */
+function studentRows(k, exclude = []){
+  const pool = shuffle(Roster.present().length ? Roster.present() : Roster.list).filter(n => !exclude.includes(shortName(n)));
+  const rows = pool.slice(0, k).map(n => [...nameParts(n), clsName()]);
+  return rows.length ? rows : CONFIG.merge.rows.slice(0, k);
+}
+function updatePresence(){
+  $$('[data-present]').forEach(e => e.textContent = ar(Roster.present().length));
+  $$('[data-total]').forEach(e => e.textContent = ar(Roster.list.length));
+}
+
+const L = CONFIG.lesson;
+const Render = {
+
+  /* أسئلة مهارات التفكير العليا */
+  hots:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:24px">${d.title}</h2>
+    <div class="hots">${d.items.map((q,i)=>`<div class="hq a" style="--i:${2+i}">
+      <span class="lvl" style="background:${['var(--pl)','var(--mintl)','var(--goldl)'][i%3]};color:${['var(--p2)','#115E59','#7A4A00'][i%3]}">${q.level}</span>
+      <div class="q">${q.q}</div><div class="ans reveal">💡 ${q.a}</div>
+      <div class="acts"><button class="btn sm gold" data-act="pick">🎲 من تجيب؟</button><button class="btn sm soft" data-h="ans">إجابة مقترحة</button></div></div>`).join('')}</div>`,
+
+  /* ربط التعلم بالحياة */
+  life:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:24px">${d.title}</h2>
+    <div class="life">${d.items.map((c,i)=>`<div class="lc a" style="--i:${2+i}"><span class="e">${c.e}</span><div><div class="t">${c.t}</div><div class="d">${c.d}</div></div></div>`).join('')}</div>
+    ${d.question?`<div class="note a" style="--i:7;margin-top:24px;font-size:28px">🗣️ ${d.question}</div>`:''}`,
+
+  /* كتاب الطالبة */
+  book:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:24px">${d.title}</h2>
+    <div class="book"><div class="cover a" style="--i:2"><div class="e">📖</div><div class="t">كتاب الطالبة</div><div class="pg">${d.pages}</div><div style="font-size:22px;opacity:.9">افتحن الكتاب وتابعن معي</div></div>
+      <div class="btasks">${d.tasks.map((t,i)=>`<div class="bt a ${t.hw?'hw':''}" style="--i:${3+i}"><span class="box">✓</span>${t.t}<span class="pgn">${t.hw?'📝 واجب • ':''}${t.p}</span></div>`).join('')}</div></div>`,
+
+  /* قياس قصير */
+  quiz:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:18px">${d.title}</h2><div class="quiz a" style="--i:2"></div>`,
+
+
+  /* نشاط إثرائي (للمتميزات) */
+  enrich:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:22px">${d.title} <span class="en-badge">${d.badge}</span></h2>
+    <div class="en-grid">${d.cards.map((c,i)=>`<div class="en a" style="--i:${2+i}">
+      <div class="lv">${'⭐'.repeat(c.level)}</div><div class="e">${c.e}</div><div class="t">${c.t}</div><div class="d">${c.d}</div>
+      <ol>${c.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+      <div class="acts"><button class="btn sm soft" data-en="steps">👀 الخطوات</button><button class="btn sm mint" data-en="done">✔ أنجزتها</button><button class="btn sm gold" data-act="pick">🎲</button></div></div>`).join('')}</div>
+    ${d.note?`<div class="note a" style="--i:6;margin-top:16px;font-size:23px;padding:14px 24px">${d.note}</div>`:''}`,
+
+
+  hero:d=>`
+    <span class="deco bob" style="top:120px;right:180px">💌</span><span class="deco bob" style="top:200px;left:200px;animation-delay:.8s">💻</span>
+    <span class="deco bob" style="bottom:220px;right:260px;animation-delay:1.4s">⭐</span><span class="deco bob" style="bottom:260px;left:280px;animation-delay:.4s">✉️</span>
+    <div class="hero">
+      <div class="emoji a bob" style="--i:0">${d.emoji}</div>
+      <h1 class="a" style="--i:1">${d.title}</h1>
+      <p class="sub a" style="--i:2">${d.subtitle}</p>
+      <div class="meta a" style="--i:3"><span class="pill">📘 ${L.subject}</span><span class="pill">🎓 ${L.grade}</span><span class="pill">👩‍🏫 ${L.teacher}</span></div>
+      <button class="btn big a" style="--i:4;margin-top:14px" data-clap>${d.button}</button>
+    </div>`,
+
+  prep:d=>{
+    const now=new Date(); let day='',date='';
+    try{ day=new Intl.DateTimeFormat('ar-SA',{weekday:'long'}).format(now);
+         date=new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',{day:'numeric',month:'long',year:'numeric'}).format(now); }catch(e){}
+    return `${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="prep-grid">
+      <div class="card info a" style="--i:2"><div class="ic">📅</div><div class="lb">اليوم</div><div class="vl" contenteditable>${day}</div></div>
+      <div class="card info a" style="--i:3"><div class="ic">🗓️</div><div class="lb">التاريخ</div><div class="vl" contenteditable style="font-size:34px">${date}</div></div>
+      <div class="card info a" style="--i:4"><div class="ic">🏫</div><div class="lb">الفصل</div><div class="vl" contenteditable data-save="className">${clsName()}</div></div>
+      <div class="card info a" style="--i:5"><div class="ic">⏰</div><div class="lb">الحصة</div><div class="vl" contenteditable data-save="period">${Store.get('prep',{}).period||L.period}</div></div>
+    </div>
+    <div class="row" style="margin-top:30px;align-items:stretch">
+      <div class="card a" style="--i:6;width:560px;text-align:center"><div style="font-size:32px;font-weight:800;color:var(--ink)">🙋‍♀️ عدد الحاضرات</div>
+        <div class="counter" style="margin-top:10px"><div class="num" data-present></div><div style="font-size:44px;font-weight:800;color:var(--muted)">/ <span data-total></span></div></div>
+        <button class="btn sm" data-act="roster" style="margin-top:10px">📋 كشف الحضور</button></div>
+      <div class="grow col" style="gap:16px"><div class="a" style="--i:7;font-size:32px;font-weight:900;color:var(--ink)">📜 ميثاق حصتنا</div>
+        <div class="rules">${d.rules.map((r,i)=>`<div class="rule a" style="--i:${8+i}"><span class="e">${r.e}</span>${r.t}</div>`).join('')}</div></div>
+    </div>`;
+  },
+
+  review:d=>`${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="flip-grid">${d.cards.map((c,i)=>`
+      <div class="flip a" style="--i:${2+i}"><div class="flip-in">
+        <div class="face front"><div class="n">${['❶','❷','❸','❹','❺','❻'][i]||'❓'}</div><div class="q">${c.q}</div><div class="tap">اضغطي لرؤية الإجابة</div></div>
+        <div class="face back">${c.a}</div></div></div>`).join('')}</div>
+    <div class="row a" style="--i:7;margin-top:34px;align-items:center">
+      <button class="btn gold" data-act="pick">🎲 من تجيب؟</button>
+      <button class="btn mint" data-act="link">🔗 لنربط بدرس اليوم</button>
+    </div>
+    <div class="link-box reveal" style="margin-top:24px"><span class="e">🔗</span><p>${d.link}</p></div>`,
+
+  predict:d=>`${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="card scenario a" style="--i:2"><div class="who bob">${d.who}</div><p>${d.scenario}</p></div>
+    <div class="a" style="--i:3;font-size:36px;font-weight:900;color:var(--p2);margin:30px 0 26px">🗳️ ${d.question} <span style="font-size:24px;color:var(--muted)">(اضغطي على البطاقة لتصويت كل طالبة)</span></div>
+    <div class="votes">${d.options.map((o,i)=>`<button class="vote a" style="--i:${4+i}"><span class="cnt">٠</span><div class="e">${o.e}</div><div class="t">${o.t}</div><div class="s">${o.s}</div></button>`).join('')}</div>
+    <div class="row a" style="--i:8;margin-top:28px;align-items:center;gap:20px">
+      <button class="btn" data-act="reveal">✨ اكشفي الحل</button><button class="btn soft sm" data-act="resetv">↺ تصفير الأصوات</button>
+      <div class="big-reveal reveal grow">${d.reveal}</div></div>`,
+
+  observe:d=>{
+    const M=CONFIG.merge;
+    return `${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="row" style="flex:1;min-height:0;align-items:flex-start">
+      <div class="col a" style="--i:2;width:560px;gap:14px"><div style="font-size:30px;font-weight:900;color:var(--ink)">📄 رسالة واحدة</div>${fillLetter(null,M.fields)}</div>
+      <div class="col a" style="--i:3;width:520px;gap:14px"><div style="font-size:30px;font-weight:900;color:var(--ink)">📊 جدول بيانات</div>
+        <table class="dtable"></table>
+        <button class="btn big" data-act="magic" style="margin-top:14px">✨ شاهدي السحر</button></div>
+      <div class="col grow a" style="--i:4;gap:14px"><div style="font-size:30px;font-weight:900;color:var(--ink)">💌 النتيجة</div><div class="stack"></div></div>
+    </div>
+    <div class="obs a" style="--i:5;margin-top:10px">${d.observations.map(o=>`<button class="ob" data-o="${o}">❓ ماذا لاحظتِ؟</button>`).join('')}</div>`;
+  },
+
+  title:d=>`
+    <span class="env" style="top:150px;right:230px">✉️</span><span class="env" style="top:250px;left:220px;animation-delay:1s">💌</span>
+    <span class="env" style="bottom:250px;right:330px;animation-delay:2s">📨</span><span class="env" style="bottom:230px;left:340px;animation-delay:3s">📩</span>
+    <div class="title-wrap">
+      <div class="lesson a" style="--i:0">${L.number} • ${L.subject}</div>
+      <h1 class="a" style="--i:1">${L.title}</h1>
+      <div class="en a" style="--i:2">${L.titleEn}</div>
+      <div class="sub a" style="--i:3">📄 مستند واحد + 🗂️ قائمة أسماء = 💌 رسائل لا تُحصى</div>
+    </div>`,
+
+  objectives:d=>`${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="obj-list">${d.items.map((t,i)=>`<div class="obj reveal"><span class="n">${['🎯','🪜','🧭','🗂️','💜'][i]||'⭐'}</span>${t}</div>`).join('')}</div>
+`,
+
+  concept:d=>`${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="eq a" style="--i:2">${d.boxes.map((b,i)=>`
+      ${i===1?'<span class="op">+</span>':''}${i===2?'<span class="op">=</span>':''}
+      <div class="flip eq-box ${b.result?'result':''}"><div class="flip-in">
+        <div class="face front">؟</div>
+        <div class="face back"><div class="e">${b.e}</div><div class="t">${b.t}</div><div class="s">${b.s}</div></div></div></div>`).join('')}</div>
+    <div class="a" style="--i:3;text-align:center;margin-top:30px"><button class="btn" data-act="def">📖 اكشفي التعريف</button></div>
+    <div class="reveal col" style="gap:20px;margin-top:10px"><div class="def">${d.definition}</div><div class="note" style="align-self:center">${d.info}</div></div>`,
+
+  brainstorm:d=>{
+    const n=d.ideas.length;
+    return `${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:0">${d.title}</h2>
+    <div class="bs">
+      <div class="bs-center a" style="--i:2"><span class="e">${d.centerEmoji}</span>${d.center}</div>
+      ${d.ideas.map((it,i)=>{ const ang=(i/n)*Math.PI*2-Math.PI/2+Math.PI/n; const x=50+Math.cos(ang)*38, y=42+Math.sin(ang)*35;
+        return `<button class="idea a" style="--i:${3+i};left:${x}%;top:${y}%"><span class="e">${it.e}</span><span class="t">${it.t}</span></button>`; }).join('')}
+      <div class="bs-add a" style="--i:12"><input type="text" placeholder="✍️ اكتبي فكرة طالبة واضغطي Enter"><button class="btn sm mint" data-act="add">➕ إضافة</button><div class="st-ideas"></div></div>
+    </div>`;
+  },
+
+  steps:d=>`${chip(d)}<h2 class="h a" style="--i:1">${d.title}</h2>
+    <div class="steps">${d.steps.map((s,i)=>`<div class="step a" style="--i:${2+i}"><div class="num">${ar(i+1)}</div><div class="body"><span class="e">${s.e}</span><span class="t">${s.t}</span><span class="d">${s.d}</span></div></div>`).join('')}</div>
+    <div class="row a" style="--i:9;margin-top:30px"><button class="btn" data-act="nextstep">⬅️ الخطوة التالية</button><button class="btn soft" data-act="allsteps">عرض الكل</button></div>`,
+
+  ribbonSim:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:20px">${d.title}</h2>
+    <div class="sim a" style="--i:2">
+      <div class="guide">
+        <div class="gstep now" data-g="0"><span class="n">١</span>اضغطي على تبويب «مراسلات» ✉️</div>
+        <div class="gstep" data-g="1"><span class="n">٢</span>اضغطي على «بدء دمج المراسلات»</div>
+        <div class="gstep" data-g="2"><span class="n">٣</span>اختاري «معالج دمج المراسلات خطوة بخطوة»</div>
+        <div class="hint info">👆 دعي طالبة تأتي إلى السبورة وتجرّب!</div>
+        <button class="btn soft sm" data-act="reset" style="align-self:flex-start">↺ إعادة المحاولة</button>
+      </div>
+      <div class="word">
+        <div class="w-title"><span>مستند1 - Word</span><span class="dots">● ● ●</span></div>
+        <div class="w-tabs">${['ملف','الصفحة الرئيسية','إدراج','تصميم','تخطيط','مراجع','مراسلات','مراجعة','عرض'].map((t,i)=>`<button class="w-tab ${i===1?'on':''}" data-tab="${t}">${t}</button>`).join('')}</div>
+        <div class="w-ribbon"></div>
+        <div class="w-body"><div class="w-page">إلى:<br>الصف:<br>مرحبًا 🌷<br>ندعوكِ لحضور اجتماعنا السنوي في المتحف الوطني للمملكة العربية السعودية.<br>يُقام الحدث يوم ١٣ محرم في تمام الساعة ٧ مساءً.<br>يسعدنا حضوركِ.</div></div>
+      </div>
+    </div>`,
+
+  wizardSim:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:20px">${d.title}</h2>
+    <div class="row a" style="--i:2;flex:1;min-height:0">
+      <div class="wiz"><div class="top">✉️ دمج المراسلات</div><div class="in"></div><div class="foot"><span class="stepn"></span><button class="next"></button></div></div>
+      <div class="col grow" style="gap:24px">
+        <div style="font-size:30px;font-weight:900;color:var(--ink)">📍 أين نحن من الخطوات الست؟</div>
+        <div class="stepper">${[1,2,3,4,5,6].map(n=>`<span>${ar(n)}</span>`).join('')}</div>
+        <div class="card" style="padding:26px 30px"><div class="stage-title" style="font-size:40px;font-weight:900;color:var(--p)"></div><div class="stage-sub sub" style="font-size:28px;margin-top:6px"></div></div>
+        <div class="hint info">💡 اختاري الإجابة المناسبة ثم اضغطي «التالي» أسفل اللوحة</div>
+        <div class="row"><button class="btn gold sm" data-act="hint">💡 تلميح</button><button class="btn soft sm" data-act="reset">↺ من البداية</button></div>
+      </div>
+    </div>`,
+
+  fieldsSim:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:20px">${d.title}</h2>
+    <div class="row a" style="--i:2;flex:1;min-height:0">
+      <div class="dlg" style="width:960px"><div class="top">تخصيص قائمة العناوين</div>
+        <div class="in"><div class="lbox"></div>
+          <div class="dbtns"><button class="dbtn" data-f="add">إضافة…</button><button class="dbtn" data-f="del">حذف</button><button class="dbtn" data-f="ren">إعادة تسمية…</button>
+            <div class="inline-in" style="display:none"><input type="text"><button class="dbtn" data-f="okname">✔ تأكيد</button></div>
+            <div style="flex:1"></div><button class="dbtn" data-f="ok" style="background:var(--word);color:#fff;border-color:var(--word)">موافق</button></div></div></div>
+      <div class="col grow" style="gap:20px">
+        <div class="card" style="padding:26px 30px"><div style="font-size:32px;font-weight:900;color:var(--ink);margin-bottom:14px">🎯 المهمة</div>
+          <div class="checklist">
+            <div data-k="del">⬜ احذفي كل الحقول ما عدا: ${d.keep.join('، ')}</div>
+            <div data-k="ren">⬜ أعيدي تسمية «${d.renameFrom}» إلى «${d.renameTo}»</div>
+            <div data-k="ok">⬜ اضغطي «موافق»</div></div></div>
+        <div class="hint info">👆 اضغطي على الحقل لتحديده، ثم اضغطي «حذف» أو «إعادة تسمية»</div>
+        <div class="note" style="font-size:26px">💡 يمكنكِ أيضًا الضغط على «إضافة» لإضافة حقل جديد إلى قائمة العناوين.</div>
+        <button class="btn soft sm" data-act="reset" style="align-self:flex-start">↺ إعادة المحاولة</button>
+      </div>
+    </div>`,
+
+  listSim:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:18px">${d.title}</h2>
+    <div class="row a" style="--i:2;flex:1;min-height:0">
+      <div class="dlg" style="width:880px"><div class="top">قائمة عناوين جديدة</div>
+        <div class="in" style="flex-direction:column"><div class="addr"><div class="tbl-wrap"><table></table></div>
+          <div class="acts"><button class="dbtn" data-l="new">➕ إدخال جديد</button><button class="dbtn" data-l="rand">🎲 طالبة من الفصل</button><button class="dbtn" data-l="del">🗑️ حذف إدخال</button><button class="dbtn" data-l="save">💾 حفظ القائمة</button></div></div></div></div>
+      <div class="col grow" style="gap:16px">
+        <div style="font-size:30px;font-weight:900;color:var(--ink)">👀 الخطوة ٥: معاينة الرسائل</div>
+        <div class="pv"></div>
+        <div class="pv-nav"><button data-l="prev">›</button><span class="pv-count"></span><button data-l="next">‹</button></div>
+        <button class="btn big mint" data-l="merge">✅ الخطوة ٦: إتمام الدمج</button>
+      </div>
+    </div>`,
+
+  tps:d=>`${chip(d)}
+    <div class="card a" style="--i:1;padding:34px 40px;margin-bottom:30px"><div class="qbig"><span class="e">${d.qEmoji}</span> ${d.question}</div></div>
+    <div class="phases">${d.phases.map((p,i)=>`<button class="phase a" style="--i:${2+i}" data-sec="${p.sec}"><div class="e">${p.e}</div><div class="t">${p.t}</div><div class="d">${p.d} • ${ar(Math.round(p.sec/60*10)/10)} د</div></button>`).join('')}</div>
+    <div class="row a" style="--i:6;margin-top:30px;align-items:center;gap:40px">${timerHTML(d.phases[0].sec)}
+      <button class="btn gold" data-act="pick">🎲 من تشارك؟</button><button class="btn" data-act="ans">💡 الإجابة النموذجية</button></div>
+    <div class="note reveal" style="margin-top:22px;font-size:34px">${d.answer}</div>`,
+
+  coop:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:22px">${d.title}</h2>
+    <div class="roles">${d.roles.map((r,i)=>`<div class="role a" style="--i:${2+i}"><div class="e">${r.e}</div><div class="t">${r.t}</div><div class="d">${r.d}</div></div>`).join('')}</div>
+    <div class="row" style="margin-top:26px;align-items:flex-start">
+      <div class="tasks grow">${d.tasks.map((t,i)=>`<div class="task a" style="--i:${6+i}"><span class="box">✓</span>${t}</div>`).join('')}</div>
+      <div class="card col a" style="--i:11;align-items:center;gap:16px;width:420px"><div style="font-size:30px;font-weight:900;color:var(--ink)">⏳ وقت المهمة</div>${timerHTML(d.seconds)}
+        <button class="btn gold sm" data-act="score">🏆 نقاط المجموعات</button></div>
+    </div>`,
+
+  mcq:d=>`${chip(d)}
+    <div class="card q-card a" style="--i:1;margin-bottom:34px"><div class="qn">${d.num}</div><div class="qt">${d.question}</div></div>
+    <div class="opts">${d.options.map((o,i)=>`<button class="opt a" style="--i:${2+i}" data-i="${i}"><span class="e">${o.e}</span>${o.t}<span class="k">${'أبجد'[i]}</span></button>`).join('')}</div>
+    <div class="feedback a" style="--i:6;margin-top:30px"></div>
+    <div class="row a" style="--i:7;justify-content:center;margin-top:10px"><button class="btn soft sm" data-act="retry">↺ إعادة السؤال</button><button class="btn gold sm" data-act="pick">🎲 من تجيب؟</button></div>`,
+
+  tf:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:22px">${d.title}</h2>
+    <div class="tf-list">${d.items.map((it,i)=>`<div class="tf a" style="--i:${2+i}" data-i="${i}"><span class="n">${ar(i+1)}</span>
+      <div class="s">${it.s}<span class="ex reveal"></span></div><span class="res"></span>
+      <div class="b"><button class="t" data-v="1">✔ صح</button><button class="f" data-v="0">✖ خطأ</button></div></div>`).join('')}</div>`,
+
+  challenge:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:22px">${d.title}</h2>
+    <div class="slots a" style="--i:2">${d.order.map((_,i)=>`<div class="slot"><span class="n">${ar(i+1)}</span></div>`).join('')}</div>
+    <div class="row" style="margin-top:34px;align-items:center">
+      <div class="pool locked grow a" style="--i:3"><div class="lock-msg">🔒 اضغطي «ابدئي» لبدء التحدي</div></div>
+      <div class="card col a" style="--i:4;align-items:center;gap:14px;width:400px">${timerHTML(d.seconds)}<div class="ch-msg" style="font-size:28px;font-weight:800;color:var(--p2);text-align:center;min-height:40px"></div></div>
+    </div>`,
+
+  summary:d=>{
+    const pos=[['top:4%','right:0'],['top:4%','left:0'],['bottom:4%','right:0'],['bottom:4%','left:0']];
+    return `${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:0">${d.title}</h2>
+    <div class="mind">
+      <svg viewBox="0 0 1700 700" preserveAspectRatio="none"><g stroke="#DDD2FF" stroke-width="6" stroke-dasharray="14 12" fill="none">
+        <path d="M850 350 C 1100 350, 1200 120, 1400 110"/><path d="M850 350 C 600 350, 500 120, 300 110"/>
+        <path d="M850 350 C 1100 350, 1200 590, 1400 600"/><path d="M850 350 C 600 350, 500 590, 300 600"/></g></svg>
+      <div class="mind-c a" style="--i:2"><span class="e">${d.centerEmoji}</span>${d.center}</div>
+      ${d.branches.map((b,i)=>`<div class="branch a" style="--i:${3+i};${pos[i].join(';')}"><div class="bt"><span class="e">${b.e}</span>${b.t}</div><div class="bd">${b.d}</div></div>`).join('')}
+    </div>`;
+  },
+
+  exit:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:24px">${d.title}</h2>
+    <div class="exit-grid">${d.prompts.map((p,i)=>`<div class="ex-card a" style="--i:${2+i};background:${p.bg};color:${p.c}"><div class="e">${p.e}</div><div class="t">${p.t}</div></div>`).join('')}</div>
+    <div class="a" style="--i:5;font-size:34px;font-weight:900;color:var(--ink);margin:34px 0 20px">📊 كيف تقيّمين فهمكِ؟ <span style="font-size:24px;color:var(--muted)">(كل طالبة تضغط على وجهها)</span></div>
+    <div class="faces">${d.faces.map((f,i)=>`<button class="face-btn a" style="--i:${6+i}"><span class="e">${f.e}</span><span class="t">${f.t}</span><span class="c">٠</span></button>`).join('')}</div>`,
+
+  closing:d=>`
+    <span class="deco bob" style="top:120px;right:200px">⭐</span><span class="deco bob" style="top:170px;left:230px;animation-delay:1s">🌟</span>
+    <span class="deco bob" style="bottom:230px;right:240px;animation-delay:.5s">💜</span><span class="deco bob" style="bottom:250px;left:260px;animation-delay:1.5s">🏆</span>
+    <div class="close-wrap">
+      <div class="a bob" style="--i:0;font-size:130px">🎉</div>
+      <h1 class="a" style="--i:1">${d.title}</h1>
+      <div class="quote a" style="--i:2">${d.quote}</div>
+      <div class="hw a" style="--i:3"><span class="e">📝</span>${d.homework}</div>
+      <button class="btn big a" style="--i:4" data-clap>${d.button}</button>
+    </div>`
+};
+
+/* ---------------- دوال التفعيل (التفاعل داخل كل شريحة) ---------------- */
+const Init = {
+
+  /* أسئلة التفكير العليا */
+  hots(el){ $$('.hq',el).forEach(q=>$('[data-h=ans]',q).onclick=()=>{ $('.ans',q).classList.toggle('shown'); Sound.success(); }); },
+
+  /* ربط التعلم بالحياة */
+  life(el){ $$('.lc',el).forEach(c=>c.onclick=()=>{ if(!c.classList.contains('shown')){ c.classList.add('shown'); Sound.success(); } }); },
+
+  /* كتاب الطالبة: متابعة المهام (تُحفظ) */
+  book(el,d){ const key='book-'+el.dataset.idx, st=Store.get(key,[]);
+    $$('.bt',el).forEach((b,i)=>{ b.classList.toggle('done',!!st[i]);
+      b.onclick=()=>{ st[i]=!st[i]; Store.set(key,st); b.classList.toggle('done',st[i]); st[i]?Sound.success():Sound.click();
+        if(d.tasks.every((_,k)=>st[k])) celebrate(); }; }); },
+
+  /* قياس قصير: سؤال تلو الآخر مع حساب الدرجة */
+  quiz(el,d){ const box=$('.quiz',el); let k=0, res=[];
+    const dots=()=>`<div class="qdots">${d.items.map((_,i)=>`<span class="${res[i]===true?'ok':res[i]===false?'no':i===k?'now':''}">${ar(i+1)}</span>`).join('')}</div>`;
+    const draw=()=>{
+      if(k>=d.items.length){ const sc=res.filter(Boolean).length, n=d.items.length, pc=sc/n;
+        box.innerHTML=dots()+`<div class="qres"><div class="big">${ar(sc)} / ${ar(n)}</div><div class="stars">${'⭐'.repeat(Math.max(1,Math.round(pc*5)))}</div>
+          <div class="msg">${pc===1?'أداء متميّز! 🏆':pc>=.6?'أداء جيد جدًا 👏 واصلي':'راجعي الدرس وحاولي مجددًا 💜'}</div>
+          <button class="btn" data-q="again">↺ إعادة القياس</button></div>`;
+        $('[data-q=again]',box).onclick=()=>{ k=0; res=[]; draw(); }; if(pc>=.6){ celebrate(); setTimeout(()=>clapFx(),300); } return; }
+      const q=d.items[k];
+      box.innerHTML=dots()+`<div class="card q-card" style="padding:26px 40px"><div class="qn">السؤال ${ar(k+1)} من ${ar(d.items.length)}</div><div class="qt" style="font-size:46px">${q.q}</div></div>
+        <div class="opts">${q.o.map((o,i)=>`<button class="opt" data-i="${i}" style="padding:24px 34px;font-size:36px">${o}<span class="k">${'أبجد'[i]}</span></button>`).join('')}</div>
+        <div class="feedback"></div>`;
+      $$('.opt',box).forEach(b=>b.onclick=()=>{ if(res[k]!==undefined) return; const ok=+b.dataset.i===q.c; res[k]=ok;
+        b.classList.add(ok?'right':'wrong'); if(!ok) $$('.opt',box)[q.c].classList.add('right');
+        const fb=$('.feedback',box); fb.className='feedback '+(ok?'ok':'no'); fb.innerHTML=(ok?'أحسنتِ! 👏 إجابة صحيحة':'الإجابة الصحيحة مظلّلة بالأخضر 💜')+' <button class="btn sm" data-q="next" style="margin-right:20px">التالي ⬅</button>';
+        ok?Sound.success():Sound.wrong(); $('[data-q=next]',box).onclick=()=>{ k++; draw(); }; });
+    };
+    draw(); },
+
+
+  /* نشاط إثرائي */
+  enrich(el){
+    $$('.en',el).forEach(c=>{
+      $('[data-en=steps]',c).onclick=()=>{ c.classList.toggle('open'); Sound.click(); };
+      $('[data-en=done]',c).onclick=()=>{ const on=c.classList.toggle('done'); if(on){ celebrate(); setTimeout(()=>clapFx(),300); } else Sound.click(); };
+    }); },
+
+
+  prep(el){
+    // حفظ الفصل والحصة عند تعديلهما
+    $$('[data-save]',el).forEach(e=>e.addEventListener('input',()=>{ const p=Store.get('prep',{}); p[e.dataset.save]=e.textContent.trim(); Store.set('prep',p); }));
+  },
+
+  review(el){
+    $$('.flip',el).forEach(f=>f.onclick=()=>{ f.classList.toggle('flipped'); Sound.click(); });
+    $('[data-act=link]',el).onclick=()=>{ $('.link-box',el).classList.add('shown'); Sound.success(); };
+  },
+
+  predict(el){
+    const counts=Store.get('votes',[]);
+    $$('.vote',el).forEach((v,i)=>{ counts[i]=counts[i]||0; $('.cnt',v).textContent=ar(counts[i]);
+      v.onclick=()=>{ counts[i]++; Store.set('votes',counts); const c=$('.cnt',v); c.textContent=ar(counts[i]); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); Sound.click(); }; });
+    $('[data-act=reveal]',el).onclick=()=>{ $('.big-reveal',el).classList.add('shown'); celebrate(); };
+    $('[data-act=resetv]',el).onclick=()=>{ $$('.vote',el).forEach((v,i)=>{counts[i]=0; $('.cnt',v).textContent='٠';}); Store.set('votes',counts); $('.big-reveal',el).classList.remove('shown'); };
+  },
+
+  observe(el){
+    const M=CONFIG.merge, stack=$('.stack',el), tbl=$('.dtable',el); let busy=false, data=[], rows=[];
+    // الجدول يمتلئ بأسماء طالبات حقيقيات من الفصل (عشوائيًا في كل مرة)
+    const fill=()=>{ data=studentRows(4); tbl.innerHTML=`<tr>${M.fields.map(f=>`<th>${f}</th>`).join('')}</tr>`+data.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''); rows=$$('tr',tbl).slice(1); };
+    fill();
+    $('[data-act=magic]',el).onclick=()=>{ if(busy) return; busy=true; if(stack.children.length) fill(); stack.innerHTML='';
+      data.forEach((r,i)=>setTimeout(()=>{ rows.forEach(x=>x.classList.remove('lit')); rows[i]&&rows[i].classList.add('lit');
+        stack.insertAdjacentHTML('beforeend',fillLetter(r,M.fields,true)); Sound.tone(600+i*120,0,0.15,'sine',0.12);
+        if(i===data.length-1){ setTimeout(()=>{ rows.forEach(x=>x.classList.remove('lit')); celebrate(); busy=false; },600); }
+      },i*750)); };
+    $$('.ob',el).forEach(b=>b.onclick=()=>{ b.textContent=b.dataset.o; b.classList.add('shown'); Sound.success(); });
+  },
+
+  /* الأهداف تظهر تلقائيًا واحدًا تلو الآخر عند الوصول للشريحة */
+  objectives(el){ const items=$$('.obj',el); let timers=[];
+    el.addEventListener('enter',()=>{ timers.forEach(clearTimeout); items.forEach(x=>x.classList.remove('shown'));
+      timers=items.map((x,i)=>setTimeout(()=>{ x.classList.add('shown'); Sound.tone(700+i*80,0,0.12,'sine',0.08); },700+i*650)); }); },
+
+  concept(el){ const boxes=$$('.eq-box',el);
+    boxes.forEach(b=>b.onclick=()=>{ b.classList.add('flipped'); Sound.click();
+      if(boxes.every(x=>x.classList.contains('flipped'))) setTimeout(celebrate,500); });
+    $('[data-act=def]',el).onclick=()=>{ boxes.forEach(b=>b.classList.add('flipped')); $('.reveal',el).classList.add('shown'); Sound.success(); }; },
+
+  brainstorm(el){
+    $$('.idea',el).forEach(b=>b.onclick=()=>{ if(!b.classList.contains('shown')){ b.classList.add('shown'); Sound.success(); } });
+    const inp=$('input',el), box=$('.st-ideas',el), ideas=Store.get('ideas',[]);
+    const drawI=()=>{ box.innerHTML=ideas.map(v=>`<span>💡 ${v}</span>`).join('')+(ideas.length?'<button class="btn sm soft" data-clr style="padding:6px 14px">🧹</button>':'');
+      const c=$('[data-clr]',box); if(c) c.onclick=()=>{ ideas.length=0; Store.set('ideas',ideas); drawI(); }; };
+    const add=()=>{ const v=inp.value.trim(); if(!v) return; ideas.push(v); Store.set('ideas',ideas); drawI(); inp.value=''; Sound.success(); };
+    drawI();
+    $('[data-act=add]',el).onclick=add; inp.addEventListener('keydown',e=>{ if(e.key==='Enter') add(); }); },
+
+  steps(el){ const s=$$('.step',el);
+    s.forEach(x=>x.onclick=()=>{ x.classList.add('shown'); Sound.click(); });
+    $('[data-act=nextstep]',el).onclick=()=>{ const n=s.find(x=>!x.classList.contains('shown')); if(n){ n.classList.add('shown'); Sound.click(); if(!s.find(x=>!x.classList.contains('shown'))) celebrate(); } };
+    $('[data-act=allsteps]',el).onclick=()=>s.forEach((x,i)=>setTimeout(()=>x.classList.add('shown'),i*180)); },
+
+  /* محاكاة شريط وورد */
+  ribbonSim(el){
+    const rib=$('.w-ribbon',el), body=$('.w-body',el), hint=$('.hint',el), g=$$('.gstep',el);
+    let st=0;
+    const btn=(i,t,extra='')=>`<button class="w-btn" ${extra}><span class="i">${i}</span>${t}</button>`;
+    const grp=(name,items)=>`<div class="w-group"><div class="items">${items}</div><div class="gname">${name}</div></div>`;
+    const generic={
+      'الصفحة الرئيسية':grp('الحافظة',btn('📋','لصق')+btn('✂️','قص'))+grp('الخط',btn('𝐁','غامق')+btn('🎨','لون الخط')+btn('🔠','حجم الخط'))+grp('فقرة',btn('☰','محاذاة')+btn('•','تعداد')),
+      'إدراج':grp('الصفحات',btn('📃','صفحة فارغة'))+grp('جداول',btn('▦','جدول'))+grp('رسومات',btn('🖼️','صور')+btn('🔷','أشكال')+btn('📊','مخطط')),
+      'تصميم':grp('تنسيق المستند',btn('🎨','سمات')+btn('🅰️','خطوط')+btn('🖌️','ألوان')),
+      'تخطيط':grp('إعداد الصفحة',btn('📐','الهوامش')+btn('🔄','الاتجاه')+btn('📄','الحجم')),
+      'مراجع':grp('جدول المحتويات',btn('📑','جدول المحتويات'))+grp('الحواشي',btn('¹','إدراج حاشية')),
+      'مراجعة':grp('تدقيق',btn('✔️','تدقيق إملائي'))+grp('تعليقات',btn('💬','تعليق جديد')),
+      'عرض':grp('طرق العرض',btn('📖','وضع القراءة')+btn('🖨️','تخطيط الطباعة'))+grp('تكبير/تصغير',btn('🔍','تكبير')),
+      'ملف':grp('ملف',btn('💾','حفظ')+btn('📂','فتح')+btn('🖨️','طباعة'))
+    };
+    const mail=grp('إنشاء',btn('✉️','مغلفات')+btn('🏷️','تسميات'))+
+      grp('بدء دمج المراسلات',btn('📨','بدء دمج<br>المراسلات ▾','data-start')+btn('👥','تحديد<br>المستلمين ▾')+btn('📝','تحرير قائمة<br>المستلمين'))+
+      grp('كتابة وإدراج الحقول',btn('🖍️','تمييز حقول<br>الدمج')+btn('📇','كتلة<br>العنوان')+btn('👋','سطر<br>الترحيب'))+
+      grp('معاينة النتائج',btn('👁️','معاينة<br>النتائج'))+grp('إنهاء',btn('✅','إنهاء<br>ودمج ▾'));
+    const say=(t,c='info')=>{ hint.className='hint '+c; hint.innerHTML=t; };
+    const setG=()=>g.forEach((x,i)=>{ x.classList.toggle('done',i<st); x.classList.toggle('now',i===st); });
+    const showTab=t=>{ $$('.w-tab',el).forEach(x=>x.classList.toggle('on',x.dataset.tab===t)); rib.innerHTML = t==='مراسلات'?mail:(generic[t]||''); bindRibbon(); };
+    const bindRibbon=()=>{
+      $$('.w-btn',rib).forEach(b=>b.onclick=e=>{ e.stopPropagation();
+        if(b.hasAttribute('data-start') && st===1){ st=2; setG(); Sound.click(); openDrop(b); say('رائع! 🌟 الآن اختاري من القائمة المنسدلة…'); }
+        else if(st===1){ Sound.wrong(); shake(b); say('حاولي مرة أخرى 💜 ابحثي عن زر «بدء دمج المراسلات»','no'); }
+        else if(st===0){ Sound.wrong(); shake(b); say('حاولي مرة أخرى 💜 أولًا: تبويب «مراسلات»','no'); }
+      });
+      if(st===1) { const t=$('[data-start]',rib); t&&t.classList.add('pulse'); }
+    };
+    const openDrop=b=>{ $$('.w-drop',rib).forEach(x=>x.remove());
+      const d=document.createElement('div'); d.className='w-drop';
+      const r=b.getBoundingClientRect(), rr=rib.getBoundingClientRect(), s=rr.width/rib.offsetWidth;
+      d.style.right=((rr.right-r.right)/s)+'px';
+      d.innerHTML=[['✉️','رسائل'],['📧','رسائل البريد الإلكتروني'],['📨','مغلفات'],['🏷️','تسميات'],['📒','دليل'],['📄','مستند Word عادي'],['🧭','معالج دمج المراسلات خطوة بخطوة…','w']]
+        .map(x=>`<button ${x[2]?'data-w':''}><span>${x[0]}</span>${x[1]}</button>`).join('');
+      rib.appendChild(d);
+      $$('button',d).forEach(x=>x.onclick=e=>{ e.stopPropagation();
+        if(x.hasAttribute('data-w')){ d.remove(); st=3; setG();
+          body.insertAdjacentHTML('beforeend',`<div class="w-pane"><h4>دمج المراسلات</h4><b>تحديد نوع المستند</b><div>ما نوع المستند الذي تعملين عليه؟</div><div>◉ رسائل</div><div>○ رسائل البريد الإلكتروني</div><div>○ مغلفات</div><div>○ تسميات</div><div>○ دليل</div><div style="margin-top:auto;color:#666">الخطوة ١ من ٦</div></div>`);
+          say('أحسنتِ! 👏 ظهرت لوحة مهام دمج المراسلات على الجانب الأيسر','ok'); celebrate(); }
+        else { Sound.wrong(); shake(x); say('حاولي مرة أخرى 💜 نريد «المعالج خطوة بخطوة» في آخر القائمة','no'); } });
+    };
+    $$('.w-tab',el).forEach(t=>t.onclick=()=>{
+      if(st>0 && t.dataset.tab!=='مراسلات'){ showTab(t.dataset.tab); return; }
+      showTab(t.dataset.tab);
+      if(t.dataset.tab==='مراسلات'){ if(st===0){ st=1; setG(); Sound.click(); say('ممتاز! ✨ ظهرت أوامر المراسلات… أين زر «بدء دمج المراسلات»؟'); bindRibbon(); } }
+      else if(st===0){ Sound.wrong(); shake(t); say(`تبويب «${t.dataset.tab}» ليس المقصود 💜 ابحثي عن تبويب ✉️ «مراسلات»`,'no'); }
+    });
+    this._reset=null;
+    const reset=()=>{ st=0; setG(); showTab('الصفحة الرئيسية'); $$('.w-pane',body).forEach(x=>x.remove()); say('👆 دعي طالبة تأتي إلى السبورة وتجرّب!'); };
+    $('[data-act=reset]',el).onclick=reset; reset();
+  },
+
+  /* محاكاة معالج دمج المراسلات */
+  wizardSim(el,d){
+    const inn=$('.wiz .in',el), next=$('.wiz .next',el), stepn=$('.stepn',el), hint=$('.hint',el), sp=$$('.stepper span',el);
+    let k=0, sel=-1, finished=false;
+    const say=(t,c='info')=>{ hint.className='hint '+c; hint.innerHTML=t; };
+    const draw=()=>{ const s=d.stages[k]; sel=-1;
+      inn.innerHTML=`<h5>${s.head}</h5><div class="q">${s.q}</div>`+s.options.map((o,i)=>`<button class="radio" data-i="${i}"><span class="o"></span>${o}</button>`).join('');
+      next.textContent=s.next; stepn.textContent=`الخطوة ${ar(s.step)} من ٦`;
+      $('.stage-title',el).textContent=`الخطوة ${ar(s.step)}: ${s.head}`; $('.stage-sub',el).textContent=s.q;
+      sp.forEach((x,i)=>{ x.className= i+1<s.step?'done':(i+1===s.step?'now':''); });
+      $$('.radio',inn).forEach(r=>r.onclick=()=>{ $$('.radio',inn).forEach(x=>x.classList.remove('sel')); r.classList.add('sel'); sel=+r.dataset.i; Sound.click();
+        if(sel===s.correct) say('اختيار صحيح ✅ الآن اضغطي «'+s.next+'»','ok'); else say('اختيار ممكن… لكن هل هو المناسب لدعوتنا؟ 🤔','info'); });
+    };
+    next.onclick=()=>{ if(finished) return; const s=d.stages[k];
+      if(sel!==s.correct){ Sound.wrong(); const r=$$('.radio',inn)[sel]; r&&shake(r); say('حاولي مرة أخرى 💜 '+s.hint,'no'); return; }
+      if(k<d.stages.length-1){ k++; Sound.success(); draw(); say('أحسنتِ! 👏 انتقلنا للخطوة التالية','ok'); }
+      else { finished=true; sp[2].className='done'; celebrate(); say('أحسنتِ! 👏 ستظهر الآن نافذة «قائمة عناوين جديدة»… هيا نخصّص الأعمدة!','ok');
+        inn.innerHTML='<div style="font-size:90px;text-align:center">🗂️</div><h5 style="text-align:center">قائمة عناوين جديدة</h5><div class="q" style="text-align:center">(New Address List)</div>'; next.textContent='✔'; }
+    };
+    $('[data-act=hint]',el).onclick=()=>{ if(!finished) say('💡 '+d.stages[k].hint,'info'); };
+    $('[data-act=reset]',el).onclick=()=>{ k=0; finished=false; draw(); say('💡 اختاري الإجابة المناسبة ثم اضغطي «التالي» أسفل اللوحة'); };
+    draw();
+  },
+
+  /* محاكاة تخصيص الأعمدة */
+  fieldsSim(el,d){
+    let fields, sel=-1, mode=null, renamed=false;
+    const lb=$('.lbox',el), hint=$('.hint',el), box=$('.inline-in',el), inp=$('input',box), chk=k=>$(`[data-k=${k}]`,el);
+    const say=(t,c='info')=>{ hint.className='hint '+c; hint.innerHTML=t; };
+    const status=()=>{
+      const target=d.keep.map(f=>f===d.renameFrom&&renamed?d.renameTo:f);
+      const delOk=fields.length===d.keep.length && fields.every(f=>target.includes(f)||d.keep.includes(f));
+      const renOk=fields.includes(d.renameTo)&&!fields.includes(d.renameFrom);
+      chk('del').className=delOk?'ok':''; chk('del').innerHTML=(delOk?'✅':'⬜')+chk('del').innerHTML.slice(chk('del').innerHTML.indexOf(' '));
+      chk('ren').className=renOk?'ok':''; chk('ren').innerHTML=(renOk?'✅':'⬜')+chk('ren').innerHTML.slice(chk('ren').innerHTML.indexOf(' '));
+      return delOk&&renOk;
+    };
+    const draw=()=>{ lb.innerHTML=fields.map((f,i)=>`<button class="${i===sel?'sel':''}" data-i="${i}">${f}</button>`).join('');
+      $$('button',lb).forEach(b=>b.onclick=()=>{ sel=+b.dataset.i; Sound.click(); draw(); }); status(); };
+    const reset=()=>{ fields=[...d.fields]; sel=-1; renamed=false; box.style.display='none'; chk('ok').className=''; chk('ok').innerHTML='⬜ اضغطي «موافق»';
+      say('👆 اضغطي على الحقل لتحديده، ثم اضغطي «حذف» أو «إعادة تسمية»'); draw(); };
+    $$('[data-f]',el).forEach(b=>b.onclick=()=>{ const f=b.dataset.f;
+      if(f==='del'){ if(sel<0) return say('حددي حقلًا أولًا 👆','no');
+        const name=fields[sel];
+        if(d.keep.includes(name)||name===d.renameTo){ Sound.wrong(); say(`انتبهي! 💜 نحتاج حقل «${name}»… لا تحذفيه`,'no'); return; }
+        fields.splice(sel,1); sel=-1; Sound.click(); draw(); if(status()) say('ممتاز! ✨ الآن اضغطي «موافق»','ok'); else say(`تم حذف «${name}» 🗑️`,'info'); }
+      if(f==='ren'){ if(sel<0) return say('حددي الحقل الذي تريدين إعادة تسميته 👆','no'); mode='ren'; box.style.display='flex'; inp.value=fields[sel]; inp.focus(); inp.select(); }
+      if(f==='add'){ mode='add'; box.style.display='flex'; inp.value=''; inp.placeholder='اسم الحقل الجديد'; inp.focus(); }
+      if(f==='okname'){ const v=inp.value.trim(); if(!v) return; if(mode==='ren'){ if(fields[sel]===d.renameFrom&&v===d.renameTo) renamed=true; fields[sel]=v; } else fields.push(v);
+        box.style.display='none'; Sound.success(); draw(); say(mode==='ren'?`تمت إعادة التسمية إلى «${v}» ✏️`:`تمت إضافة «${v}» ➕`,'ok'); }
+      if(f==='ok'){ if(status()){ chk('ok').className='ok'; chk('ok').innerHTML='✅ اضغطي «موافق»'; celebrate(); say('أحسنتِ! 👏 أصبحت القائمة: '+fields.join(' • '),'ok'); }
+        else { Sound.wrong(); say('حاولي مرة أخرى 💜 تأكدي من إكمال المهمة أولًا','no'); } }
+    });
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter') $('[data-f=okname]',el).click(); });
+    $('[data-act=reset]',el).onclick=reset; reset();
+  },
+
+  /* محاكاة تعبئة القائمة ومعاينة الرسائل وإتمام الدمج */
+  listSim(el){
+    const F=CONFIG.merge.fields; let rows=Store.get('mergeRows',null)||studentRows(2); let cur=0;
+    const keep=()=>Store.set('mergeRows',rows);   // حفظ القائمة تلقائيًا
+    const tbl=$('table',el), pv=$('.pv',el), cnt=$('.pv-count',el);
+    const preview=()=>{ cur=Math.max(0,Math.min(cur,rows.length-1)); pv.innerHTML=rows.length?fillLetter(rows[cur],F):fillLetter(null,F);
+      cnt.textContent=rows.length?`المستلمة ${ar(cur+1)} من ${ar(rows.length)}`:'لا يوجد مستلمات';
+      $$('tr',tbl).forEach((tr,i)=>tr.classList.toggle('cur',i-1===cur)); };
+    const draw=()=>{ tbl.innerHTML=`<tr>${F.map(f=>`<th>${f}</th>`).join('')}</tr>`+rows.map((r,ri)=>`<tr>${F.map((_,ci)=>`<td><input data-r="${ri}" data-c="${ci}" value="${r[ci]||''}"></td>`).join('')}</tr>`).join('');
+      $$('input',tbl).forEach(inp=>{ inp.oninput=()=>{ rows[inp.dataset.r][inp.dataset.c]=inp.value; cur=+inp.dataset.r; keep(); preview(); };
+        inp.onfocus=()=>{ cur=+inp.dataset.r; preview(); }; }); preview(); };
+    $$('[data-l]',el).forEach(b=>b.onclick=()=>{ const a=b.dataset.l;
+      if(a==='rand'){ const r=studentRows(1,rows.map(x=>(x[0]+' '+x[1]).trim()))[0]; if(r){ rows.push(r); cur=rows.length-1; keep(); draw(); Sound.success(); } }
+      if(a==='new'){ rows.push(F.map(()=>'')); cur=rows.length-1; keep(); draw(); Sound.click(); const last=$$('input',tbl).slice(-F.length)[0]; last&&last.focus(); }
+      if(a==='del'){ if(rows.length){ rows.splice(cur,1); keep(); draw(); Sound.click(); } }
+      if(a==='save'){ keep(); Sound.success(); b.textContent='✔ تم الحفظ'; setTimeout(()=>b.textContent='💾 حفظ القائمة',1500); }
+      if(a==='prev'){ cur--; preview(); Sound.click(); } if(a==='next'){ cur++; preview(); Sound.click(); }
+      if(a==='merge'){ const valid=rows.filter(r=>r.some(v=>v&&v.trim())); if(!valid.length){ Sound.wrong(); return; }
+        $('#mergeGrid').innerHTML=valid.map(r=>fillLetter(r,F,true)).join(''); $('#mergeCount').textContent=`(${ar(valid.length)} رسائل)`;
+        $$('#mergeGrid .letter').forEach((x,i)=>{x.style.animation=`pop .5s ${i*0.12}s both`;}); openOv('ovMerge'); celebrate(); setTimeout(()=>clapFx(),400); }
+    });
+    draw();
+  },
+
+  tps(el){
+    const t=makeTimer(el,+el.dataset.idx);
+    $$('.phase',el).forEach(p=>p.onclick=()=>{ $$('.phase',el).forEach(x=>x.classList.remove('on')); p.classList.add('on'); t.reset(+p.dataset.sec); t.start(); Sound.click(); });
+    $('[data-act=ans]',el).onclick=()=>{ $('.note.reveal',el).classList.add('shown'); Sound.success(); };
+  },
+
+  coop(el){ makeTimer(el,+el.dataset.idx,()=>{});
+    $$('.task',el).forEach(t=>t.onclick=()=>{ t.classList.toggle('done'); Sound.click(); });
+    $('[data-act=score]',el).onclick=()=>openOv('ovScore'); },
+
+  mcq(el,d){ const fb=$('.feedback',el); let done=false;
+    $$('.opt',el).forEach(o=>o.onclick=()=>{ if(done) return; const i=+o.dataset.i;
+      if(i===d.correct){ done=true; o.classList.add('right'); fb.className='feedback ok'; fb.innerHTML=`أحسنتِ! 👏 إجابة صحيحة <span style="font-size:26px;font-weight:600;margin-right:10px">— ${d.explain}</span>`; celebrate(); }
+      else { o.classList.add('wrong'); shake(o); fb.className='feedback'; void fb.offsetWidth; fb.className='feedback no'; fb.textContent='حاولي مرة أخرى 💜'; Sound.wrong(); } });
+    $('[data-act=retry]',el).onclick=()=>{ done=false; $$('.opt',el).forEach(o=>o.classList.remove('right','wrong')); fb.className='feedback'; fb.innerHTML=''; }; },
+
+  tf(el,d){ let score=0;
+    $$('.tf',el).forEach(row=>{ const it=d.items[+row.dataset.i];
+      $$('.b button',row).forEach(b=>b.onclick=()=>{ if(row.classList.contains('good')) return;
+        const v=b.dataset.v==='1';
+        if(v===it.a){ row.classList.add('good'); $('.res',row).textContent='✅'; const ex=$('.ex',row); ex.textContent=(it.a?'صح: ':'خطأ: ')+it.ex; ex.classList.add('shown'); Sound.success(); score++;
+          if(score===d.items.length){ confetti(); setTimeout(()=>clapFx(),300); } }
+        else { row.classList.remove('bad'); void row.offsetWidth; row.classList.add('bad'); $('.res',row).textContent='💜'; Sound.wrong(); } }); }); },
+
+  challenge(el,d){
+    const pool=$('.pool',el), slots=$$('.slot',el), msg=$('.ch-msg',el); let k=0, on=false;
+    const t=makeTimer(el,+el.dataset.idx,()=>{ if(on){ on=false; pool.classList.add('locked'); msg.innerHTML='⏰ انتهى الوقت! حاولن مرة أخرى 💜'; } });
+    const build=()=>{ k=0; slots.forEach((s,i)=>{ s.className='slot'; s.innerHTML=`<span class="n">${ar(i+1)}</span>`; });
+      pool.innerHTML=shuffle(d.order).map(s=>`<button class="piece">${s}</button>`).join('');
+      $$('.piece',pool).forEach(p=>p.onclick=()=>{ if(!on) return;
+        if(p.textContent===d.order[k]){ slots[k].classList.add('fill'); slots[k].innerHTML=`<span class="n">✅</span>${p.textContent}`; p.classList.add('used'); k++; Sound.click();
+          if(k===d.order.length){ on=false; t.stop(); msg.innerHTML='🏆 أحسنتنّ! أنجزتنّ التحدي'; celebrate(); setTimeout(()=>clapFx(),400); } }
+        else { shake(p); Sound.wrong(); } }); };
+    $('.t-start',el).onclick=()=>{ if(on) { t.start(); return; } build(); on=true; msg.textContent='🔥 هيا بسرعة!'; pool.classList.remove('locked'); t.reset(); t.start(); };
+    $('.t-reset',el).onclick=()=>{ on=false; t.reset(); pool.classList.add('locked'); pool.innerHTML='<div class="lock-msg">🔒 اضغطي «ابدئي» لبدء التحدي</div>'; msg.textContent=''; slots.forEach((s,i)=>{ s.className='slot'; s.innerHTML=`<span class="n">${ar(i+1)}</span>`; }); };
+  },
+
+  summary(el){ $$('.branch',el).forEach(b=>b.onclick=()=>{ b.classList.toggle('shown'); Sound.click(); }); },
+
+  exit(el){ const cs=Store.get('faces',[]);
+    $$('.face-btn',el).forEach((f,i)=>{ cs[i]=cs[i]||0; $('.c',f).textContent=ar(cs[i]); f.onclick=()=>{ cs[i]++; Store.set('faces',cs); $('.c',f).textContent=ar(cs[i]); Sound.click(); }; }); }
+};
+
+/* ==================================================================
+   🏗️ بناء الشرائح
+   ================================================================== */
+const host=$('#slides'), slides=[];
+CONFIG.slides.forEach((d,i)=>{
+  const s=document.createElement('section'); s.className='slide'; s.dataset.trans=d.transition||'fade'; s.dataset.idx=i;
+  s.innerHTML=(Render[d.type]||(()=>`<h2 class="h">نوع غير معروف: ${d.type}</h2>`))(d);
+  host.appendChild(s); slides.push(s);
+  try{ Init[d.type] && Init[d.type].call(Init,s,d); }catch(e){ console.error('خطأ في الشريحة',i+1,e); }
+});
+
+/* أزرار عامة داخل الشرائح: تصفيق / قرعة / لوحة النقاط */
+document.addEventListener('click',e=>{
+  const c=e.target.closest('[data-clap]'); if(c){ clapFx(c); }
+  const p=e.target.closest('[data-act=pick]'); if(p){ openPick(); }
+  const ro=e.target.closest('[data-act=roster]'); if(ro){ openOv('ovRoster'); }
+  const x=e.target.closest('[data-close]'); if(x){ closeOv(); }
+  if(e.target.classList.contains('overlay')) closeOv();
+});
+
+/* ==================================================================
+   🧭 التنقل بين الشرائح
+   ================================================================== */
+let cur=-1;
+const stage=$('#stage');
+function go(n){
+  n=Math.max(0,Math.min(slides.length-1,n)); if(n===cur) return;
+  stage.dataset.dir = n>cur?'next':'prev';
+  if(slides[cur]) slides[cur].classList.remove('active');
+  cur=n; slides[cur].classList.add('active'); slides[cur].dispatchEvent(new Event('enter'));
+  $('#count').textContent=`${ar(cur+1)} / ${ar(slides.length)}`;
+  $('#progress').style.width=((cur+1)/slides.length*100)+'%';
+  $('#slideTag').textContent=CONFIG.slides[cur].tag||'';
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  try{ history.replaceState(null,'','#'+(cur+1)); }catch(e){}
+  Store.set('slide',cur);   // نتذكّر آخر شريحة
+}
+const next=()=>go(cur+1), prev=()=>go(cur-1);
+$('#btnNext').onclick=next; $('#btnPrev').onclick=prev;
+$('#btnClap').onclick=e=>clapFx(e.currentTarget);
+$('#btnPick').onclick=openPick;
+$('#btnRoster').onclick=()=>openOv('ovRoster');
+$('#btnScore').onclick=()=>openOv('ovScore');
+$('#btnFull').onclick=()=>{ if(!document.fullscreenElement) document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); else document.exitFullscreen(); };
+
+/* لوحة المفاتيح */
+document.addEventListener('keydown',e=>{
+  const t=e.target, typing = t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable);
+  if(e.key==='Escape'){ closeOv(); if(typing) t.blur(); return; }
+  if(typing) return;                                    // لا نتدخل أثناء الكتابة
+  const k=e.key;
+  if(k==='ArrowRight'||k===' '||k==='Spacebar'||k==='PageDown'){ e.preventDefault(); if(!anyOpen()) next(); }
+  else if(k==='ArrowLeft'||k==='PageUp'){ e.preventDefault(); if(!anyOpen()) prev(); }
+  else if(k==='ArrowUp'||k==='ArrowDown'){ e.preventDefault(); }
+  else if(k==='Home'){ e.preventDefault(); go(0); }
+  else if(k==='End'){ e.preventDefault(); go(slides.length-1); }
+  else if(k==='ت'||k==='f'||k==='F'){   // ت (أو نفس الزر بلوحة إنجليزية)
+    e.preventDefault(); clapFx($('#btnClap')); }
+});
+/* منع التمرير بعجلة الماوس أو اللمس */
+addEventListener('wheel',e=>{ if(!e.target.closest('.lbox,.tbl-wrap,.panel')) e.preventDefault(); },{passive:false});
+addEventListener('touchmove',e=>{ if(!e.target.closest('.lbox,.tbl-wrap,.panel')) e.preventDefault(); },{passive:false});
+
+/* ==================================================================
+   🪟 النوافذ المنبثقة: القرعة ولوحة النقاط
+   ================================================================== */
+function openOv(id){ closeOv(); $('#'+id).classList.add('open'); if(id==='ovScore') drawScores(); if(id==='ovRoster') drawRoster(); }
+function closeOv(){ $$('.overlay.open').forEach(o=>o.classList.remove('open')); }
+function anyOpen(){ return !!$('.overlay.open'); }
+
+/* 🎲 القرعة: تختار من الحاضرات فقط، ولا تكرر طالبة حتى يُخترن جميعًا */
+let picked=Store.get('picked',[]).filter(n=>Roster.list.includes(n)), pickedNow=null;
+function openPick(){ openOv('ovPick'); spinPick(); }
+function spinPick(){
+  const el=$('#pickNum'), sub=$('#pickSub'), present=Roster.present();
+  if(!present.length){ el.textContent='لا توجد حاضرات'; sub.textContent=''; return; }
+  let pool=present.filter(n=>!picked.includes(n)); if(!pool.length){ picked=[]; pool=present; }
+  const final=pool[Math.floor(Math.random()*pool.length)]; picked.push(final); Store.set('picked',picked); pickedNow=final;
+  let n=0; sub.textContent='';
+  const spin=setInterval(()=>{ el.textContent=shortName(present[Math.floor(Math.random()*present.length)]); Sound.tick();
+    if(++n>16){ clearInterval(spin); el.textContent=shortName(final); el.style.animation='none'; void el.offsetWidth; el.style.animation='pop .5s'; Sound.success();
+      const left=present.filter(x=>!picked.includes(x)).length;
+      sub.textContent=`رقم ${ar(Roster.list.indexOf(final)+1)} في الكشف • ⭐ ${ar(Roster.stars[final]||0)} • تبقّى ${ar(left)} لم يُخترن`; } },70);
+}
+$('#pickStar').onclick=()=>{ if(!pickedNow) return; Roster.star(pickedNow); clapFx($('#pickStar'));
+  $('#pickSub').textContent=`رقم ${ar(Roster.list.indexOf(pickedNow)+1)} في الكشف • ⭐ ${ar(Roster.stars[pickedNow])}`; };
+
+/* 👩‍🎓 رسم كشف الطالبات */
+function drawRoster(){
+  $('#rosterGrid').innerHTML=Roster.list.map((n,i)=>{ const off=Roster.absent.includes(n);
+    return `<div class="st ${off?'off':''}" data-i="${i}" title="${n}"><span class="no">${ar(i+1)}</span><span class="nm">${shortName(n)}</span>
+      <div class="row2"><span class="stat">${off?'غائبة':'حاضرة'}</span><button class="star" data-s="${i}">⭐ ${ar(Roster.stars[n]||0)}</button></div>
+      <button class="rm" data-r="${i}" title="حذف من القائمة">✕</button></div>`; }).join('');
+  $$('#rosterGrid .st').forEach(c=>c.onclick=e=>{ e.stopPropagation(); const n=Roster.list[+c.dataset.i];
+    if(e.target.closest('.star')){ Roster.star(n); Sound.success(); }
+    else if(e.target.closest('.rm')){ if(c.dataset.arm){ Roster.remove(n); Sound.click(); } else { c.dataset.arm=1; e.target.textContent='؟'; setTimeout(()=>{ delete c.dataset.arm; },2500); return; } }
+    else { Roster.toggle(n); Sound.click(); }
+    drawRoster(); });
+  updatePresence();
+}
+const addStudent=()=>{ const i=$('#rosterAdd'); if(i.value.trim()){ Roster.add(i.value); i.value=''; Sound.success(); drawRoster(); } };
+$('#rosterAddBtn').onclick=addStudent;
+$('#rosterAdd').addEventListener('keydown',e=>{ if(e.key==='Enter') addStudent(); });
+$('#allPresent').onclick=()=>{ Roster.absent=[]; Roster.saveAbsent(); drawRoster(); Sound.success(); };
+$('#resetStars').onclick=()=>{ Roster.stars={}; ClassStore.set('stars',{}); drawRoster(); };
+$('#clearAll').onclick=e=>{ const b=e.currentTarget;
+  if(b.dataset.arm){ Store.clear(); ClassStore.clear(); location.hash=''; location.reload(); return; }
+  b.dataset.arm=1; b.textContent='⚠️ اضغطي مرة أخرى للتأكيد'; setTimeout(()=>{ delete b.dataset.arm; b.textContent='🗑️ مسح البيانات المحفوظة'; },3000); };
+$('#pickAgain').onclick=spinPick;
+
+const scores=CONFIG.groups.map((_,i)=>(Store.get('groups',[])[i])||0);
+function drawScores(){
+  const max=Math.max(...scores);
+  $('#scoreGrid').innerHTML=CONFIG.groups.map((g,i)=>`<div class="grp ${max>0&&scores[i]===max?'lead':''}"><span class="e">${g.emoji}</span><span class="nm">${g.name}</span>
+    <button data-g="${i}" data-d="-1">−</button><span class="sc">${ar(scores[i])}</span><button class="plus" data-g="${i}" data-d="1">+</button></div>`).join('');
+  $$('#scoreGrid button').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const i=+b.dataset.g; scores[i]=Math.max(0,scores[i]+ +b.dataset.d); Store.set('groups',scores);
+    if(+b.dataset.d>0){ Sound.success(); } drawScores(); });
+}
+
+/* ==================================================================
+   🙈 إخفاء شريط التحكم تلقائيًا عند عدم تحريك الماوس
+   ================================================================== */
+let hideT;
+function showBar(){ ['#bar','#keys','#slideTag'].forEach(s=>$(s).classList.remove('hide')); document.body.style.cursor='';
+  clearTimeout(hideT); hideT=setTimeout(()=>{ if(!$('#bar:hover')){ ['#bar','#keys','#slideTag'].forEach(s=>$(s).classList.add('hide')); } },3000); }
+addEventListener('mousemove',showBar); addEventListener('touchstart',showBar,{passive:true});
+
+/* ==================================================================
+   📐 ملاءمة العرض لأي شاشة مع الحفاظ على نسبة 16:9
+   ================================================================== */
+function fit(){ const s=Math.min(innerWidth/1920,innerHeight/1080); stage.style.transform=`translate(-50%,-50%) scale(${s})`; }
+addEventListener('resize',fit); fit();
+
+
+/* ==================================================================
+   📑 لوحة بنود تقييم الأداء (للمعلمة / المشرفة)
+   تربط كل بند بالشرائح التي تحققه، أو بالملف المرفق، أو تبيّن أنه بند إداري
+   ================================================================== */
+function drawEval(){
+  const find=t=>CONFIG.slides.map((s,i)=>[s,i]).filter(([s])=>s.tag===t||(s.tag||'').startsWith(t+' '));
+  $('#evalBody').innerHTML=CONFIG.evalMap.map(dm=>`<div class="ev-dom"><h4>${dm.e} ${dm.domain}</h4>${dm.items.map(it=>{
+    const chips=(it.tags||[]).flatMap(t=>find(t)).map(([s,i])=>`<button class="ev-chip" data-go="${i}">🖥️ ${ar(i+1)} • ${s.tag}</button>`).join('');
+    const kmap=f=>/ورقة/.test(f)?'ws':/بنك/.test(f)?'bank':/القياس/.test(f)?'quizp':/الإثرائي/.test(f)?'enrich':'plan';
+    const files=(it.files||[]).map(f=>`<button class="ev-chip file" data-kit="${kmap(f)}">📁 ${f}</button>`).join('')+(/شواهد/.test(it.admin||'')?`<button class="ev-chip file" data-kit="ev">📁 شواهد التقييم</button>`:'');
+    const adm=it.admin?`<span class="ev-chip adm">👩‍🏫 ${it.admin}</span>`:'';
+    return `<div class="ev-it"><span class="ok">${it.admin&&!chips&&!files?'📌':'✅'}</span><span class="nm">${it.t}</span>${chips}${files}${adm}</div>`; }).join('')}</div>`).join('');
+  $$('#evalBody [data-go]').forEach(b=>b.onclick=()=>{ closeOv(); go(+b.dataset.go); });
+  $$('#evalBody [data-kit]').forEach(b=>b.onclick=()=>openKit(b.dataset.kit));
+}
+$('#btnEval').onclick=()=>{ openOv('ovEval'); drawEval(); };
+
+
+/* ==================================================================
+   📁 حقيبة المعلمة (داخل العرض): خطة الدرس، ورقة العمل، بنك الأسئلة،
+   القياس القصير، سجل النتائج، النشاط الإثرائي، شواهد التقييم
+   — كل تبويب قابل للطباعة مباشرة من زر 🖨️
+   ================================================================== */
+const KT = [['plan','📋 خطة الدرس'],['ws','📝 ورقة العمل'],['bank','🗂️ بنك الأسئلة'],['quizp','📊 القياس القصير'],['rec','📈 سجل النتائج'],['enrich','🌟 النشاط الإثرائي'],['ev','📑 شواهد التقييم']];
+let kitTab='plan';
+const LT=['أ','ب','ج','د'];
+function hijriToday(){ try{ return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',{day:'numeric',month:'long',year:'numeric'}).format(new Date()); }catch(e){ return '..../..../١٤٤٨ هـ'; } }
+function ktab(rows,o={}){ return `<table class="kt">${rows.map((r,i)=>`<tr>${r.map(c=>{ const h=o.head&&i===0; return `<${h?'th':'td'}${typeof c==='object'&&c&&c.cls?` class="${c.cls}"`:''}>${typeof c==='object'&&c?c.t:c}</${h?'th':'td'}>`; }).join('')}</tr>`).join('')}</table>`; }
+const kLine=()=>`<div class="kline"></div>`;
+const lname=()=>KIT.lesson.lesson.split(': ')[1];
+function kitHead(title){ const C=KIT.common, L=KIT.lesson;
+  return `<div class="khd"><div class="kt1">${title}</div><div class="kt2">${L.lesson} • ${L.unit}</div></div>
+  ${ktab([[{t:'المادة',cls:'lb'},C.subject,{t:'الصف',cls:'lb'},C.grade],[{t:'المعلمة',cls:'lb'},C.teacher,{t:'المدرسة',cls:'lb'},C.school],[{t:'الفصل',cls:'lb'},clsName(),{t:'التاريخ',cls:'lb'},hijriToday()]])}`; }
+const stuHead=()=>ktab([[{t:'الاسم',cls:'lb'},'',{t:'الفصل',cls:'lb'},clsName()]]);
+
+const KitDocs={
+  plan(){ const L=KIT.lesson;
+    return kitHead('خطة الدرس')+`
+    <h3>🎯 الأهداف التعليمية: يُتوقع من الطالبة في نهاية الدرس أن:</h3><ol>${L.objectives.map(o=>`<li>${o}</li>`).join('')}</ol>
+    <h3>🔗 الخبرة السابقة والربط</h3><p>الدرس السابق: ${L.prev}. يتم الربط في الشريحة (٣) ببطاقات أسئلة ثم سؤال انتقالي لدرس اليوم.</p>
+    <h3>🧩 استراتيجيات التدريس</h3><ul class="cols">${L.strategies.map(s=>`<li>${s}</li>`).join('')}</ul>
+    <h3>🛠️ الوسائل والتقنيات</h3><ul><li>العرض التفاعلي على السبورة الذكية مع محاكاة لبرنامج وورد.</li><li>جهاز الحاسب وبرنامج مايكروسوفت وورد.</li><li>كتاب الطالبة ص ${L.pages}.</li><li>ورقة العمل، والمؤقتات، ولوحة نقاط المجموعات (داخل العرض).</li></ul>
+    <h3>⏱️ إجراءات التدريس (مطابقة لترتيب شرائح العرض) – ٤٥ دقيقة</h3>
+    ${ktab([['المرحلة','الشريحة','الإجراء','الاستراتيجية','الزمن'],...L.procedures],{head:true})}
+    <p class="knote">النشاط الإثرائي للمتميزات ومن تنهي مبكرًا، ويمكن الاكتفاء ببعض أسئلة التقويم حسب الوقت.</p>
+    <h3>📊 التقويم</h3><ul><li>تكويني: أسئلة شفهية بالقرعة، صح أم خطأ، اختيار من متعدد، محاكاة عملية.</li><li>مهارات التفكير العليا: ٣ أسئلة (تحليل – تقويم – إبداع).</li><li>قياس قصير في العرض (٥ أسئلة) + قياس ورقي من ١٠ درجات.</li><li>ختامي: بطاقة الخروج والتقييم الذاتي.</li></ul>
+    <h3>📝 الواجب</h3><p>${L.homework}</p>
+    <h3>🌟 الإثراء</h3><ul>${L.enrich.map(e=>`<li><b>${e[0]}:</b> ${e[1]}</li>`).join('')}</ul>
+    ${ktab([['توقيع المعلمة: ..............................','توقيع المشرفة: ..............................']])}`; },
+
+  ws(){ const W=KIT.lesson.worksheet; let n=0; const N=()=>['الأول','الثاني','الثالث','الرابع'][n++];
+    let h=`<div class="khd"><div class="kt1">ورقة عمل – ${lname()}</div></div>`+stuHead();
+    if(W.order) h+=`<h3>النشاط ${N()} (فردي): رتّبي خطوات دمج المراسلات بكتابة الرقم المناسب</h3>${ktab([0,2,4].map(i=>['(    )',W.order[i],'(    )',W.order[i+1]]))}`;
+    h+=`<h3>النشاط ${N()}: فكّري – زاوجي – شاركي</h3><p><b>السؤال:</b> ${W.tps}</p>${ktab([['🤔 فكرتي (بمفردي)','👭 فكرة زميلتي','📣 ما اتفقنا عليه'],['<div class="kbox"></div>','<div class="kbox"></div>','<div class="kbox"></div>']],{head:true})}`;
+    if(W.match){ const f=[3,0,4,1,2]; h+=`<h3>النشاط ${N()}: صِلي كل أداة بوظيفتها بكتابة الرقم</h3>${ktab([['م','الأداة','الرقم','الوظيفة'],...W.match.map((m,i)=>[ar(i+1),m[0],'(    )',W.match[f[i]][1]])],{head:true})}`; }
+    h+=`<h3>النشاط ${N()} (تعاوني): مهمة المجموعة</h3><p>اسم المجموعة: ................ القائدة: ................ المتحدثة: ................</p>${ktab([['م','المهمة','تم ✔'],...W.group.map((g,i)=>[ar(i+1),g,''])],{head:true})}
+      <h3>قيّمي نفسكِ</h3>${ktab([['🤩 فهمتُ تمامًا ☐','🙂 فهمتُ أغلبه ☐','🤔 أحتاج مساعدة ☐']])}`;
+    return h; },
+
+  bank(){ const L=KIT.lesson;
+    return `<div class="khd"><div class="kt1">بنك الأسئلة – ${lname()}</div></div>
+    <h3>السؤال الأول: اختاري الإجابة الصحيحة</h3>${L.mcq.map((q,i)=>`<p class="kq">${ar(i+1)}) ${q[0]}</p>${ktab([q[1].map((o,k)=>`${LT[k]}) ${o}`)])}`).join('')}
+    <h3>السؤال الثاني: ضعي (✓) أمام العبارة الصحيحة و(✗) أمام الخاطئة</h3>${ktab([['م','العبارة','✓ / ✗'],...L.tf.map((t,i)=>[ar(i+1),t[0],''])],{head:true})}
+    <h3>السؤال الثالث: أكملي الفراغات</h3><ol>${L.fill.map(f=>`<li>${f[0]}</li>`).join('')}</ol>
+    <h3>السؤال الرابع: أجيبي عما يلي</h3>${L.essay.map((e,i)=>`<p class="kq">${ar(i+1)}) ${e[0]}</p>${kLine()}${kLine()}`).join('')}
+    <h3>السؤال الخامس: أسئلة مهارات التفكير العليا</h3>${L.hots.map((q,i)=>`<p class="kq">${ar(i+1)}) <span class="ktag">${q[0]}</span> ${q[1]}</p>${kLine()}`).join('')}
+    <div class="pb"></div><div class="khd"><div class="kt1">نموذج إجابة بنك الأسئلة (للمعلمة)</div></div>
+    <h3>الاختيار من متعدد</h3>${ktab([0,5].map(s=>L.mcq.slice(s,s+5).map((q,i)=>`${ar(s+i+1)}) ${LT[q[2]]} – ${q[1][q[2]]}`)))}
+    <h3>صح أم خطأ</h3>${ktab([['م','الإجابة','التصحيح / التعليل'],...L.tf.map((t,i)=>[ar(i+1),t[1]?'✓':'✗',t[2]||'—'])],{head:true})}
+    <h3>أكملي الفراغات</h3>${ktab(L.fill.map((f,i)=>[ar(i+1),f[1]]))}
+    <h3>الأسئلة المقالية ومهارات التفكير العليا</h3>${ktab([...L.essay.map((e,i)=>[ar(i+1),e[1]]),...L.hots.map(q=>[q[0],q[2]])])}`; },
+
+  quizp(){ const L=KIT.lesson;
+    return `<div class="khd"><div class="kt1">قياس قصير – ${lname()}</div></div>
+    ${ktab([[{t:'الاسم',cls:'lb'},'',{t:'الفصل',cls:'lb'},clsName(),{t:'الدرجة',cls:'lb'},'  / ١٠']])}
+    <h3>السؤال الأول: اختاري الإجابة الصحيحة (٥ درجات)</h3>${L.quizMcq.map((qi,i)=>{ const q=L.mcq[qi]; return `<p class="kq">${ar(i+1)}) ${q[0]}</p>${ktab([q[1].map((o,k)=>`${LT[k]}) ${o}`)])}`; }).join('')}
+    <h3>السؤال الثاني: ضعي (✓) أو (✗) (٥ درجات)</h3>${ktab([['م','العبارة','✓ / ✗'],...L.quizTf.map((ti,i)=>[ar(i+1),L.tf[ti][0],''])],{head:true})}
+    <p style="text-align:center;font-weight:800;color:#6D28D9">انتهت الأسئلة… بالتوفيق 💜</p>
+    <div class="pb"></div><h3>نموذج الإجابة (للمعلمة)</h3>${ktab([['السؤال الأول','السؤال الثاني'],...[0,1,2,3,4].map(i=>{ const q=L.mcq[L.quizMcq[i]], t=L.tf[L.quizTf[i]]; return [`${ar(i+1)}) ${LT[q[2]]} – ${q[1][q[2]]}`,`${ar(i+1)}) ${t[1]?'✓':'✗'}`]; })],{head:true})}`; },
+
+  rec(){ const R=Store.get('record',{});
+    const rows=Roster.list.map((n,i)=>{ const r=R[n]||{}; const off=Roster.absent.includes(n);
+      return `<tr class="${off?'kabs':''}"><td>${ar(i+1)}</td><td>${n}${off?' <small>(غائبة)</small>':''}</td>
+        <td><input class="kin" data-n="${i}" data-f="score" value="${r.score??''}" inputmode="numeric"></td>
+        <td><input type="checkbox" class="kin" data-n="${i}" data-f="book" ${r.book?'checked':''}></td>
+        <td><input type="checkbox" class="kin" data-n="${i}" data-f="hw" ${r.hw?'checked':''}></td>
+        <td>${'⭐'.repeat(Math.min(5,Roster.stars[n]||0))||'—'}</td></tr>`; }).join('');
+    const sc=Roster.list.map(n=>parseFloat((R[n]||{}).score)).filter(v=>!isNaN(v));
+    const avg=sc.length?(sc.reduce((a,b)=>a+b,0)/sc.length).toFixed(1):'—';
+    return `<div class="khd"><div class="kt1">سجل نتائج القياس القصير ومتابعة الأداء</div><div class="kt2">${KIT.lesson.lesson} • الفصل: ${clsName()} • ${hijriToday()}</div></div>
+    <p class="knote noprint">اكتبي الدرجة وعلّمي الكتاب والواجب — يُحفظ تلقائيًا في هذا المتصفح. النجوم تأتي من كشف الطالبات ⭐.</p>
+    <table class="kt"><tr><th>م</th><th>اسم الطالبة</th><th>القياس (١٠)</th><th>الكتاب ✔</th><th>الواجب ✔</th><th>المشاركة</th></tr>${rows}</table>
+    <p><b>عدد من رُصدت درجاتهن:</b> ${ar(sc.length)} • <b>المتوسط:</b> ${ar(avg)} / ١٠ • <b>الحاضرات:</b> ${ar(Roster.present().length)} / ${ar(Roster.list.length)}</p>
+    <p class="knote">مستويات الأداء: ٩–١٠ متميز • ٧–٨ متقدم • ٥–٦ متمكن • أقل من ٥ يحتاج خطة علاجية</p>`; },
+
+  enrich(){ const L=KIT.lesson;
+    return `<div class="khd"><div class="kt1">بطاقة النشاط الإثرائي (للمتميزات)</div></div>${stuHead()}
+    <p>اختاري تحديًا واحدًا على الأقل، ونفّذيه على جهازكِ، ثم احفظي الملف باسمكِ وسلّميه للمعلمة.</p>
+    ${ktab([['المستوى','التحدي','المطلوب','أنجزته ✔'],...L.enrich.map((e,i)=>['⭐'.repeat(i+1),`<b>${e[0]}</b>`,e[1],''])],{head:true})}
+    <h3>ماذا أضاف لي هذا التحدي؟</h3>${kLine()}${kLine()}`; },
+
+  ev(){ const tag=t=>t.replace(/🖥️/g,'<span class="kchip s">العرض</span>').replace(/📁/g,'<span class="kchip f">الحقيبة</span>').replace(/📌/g,'<span class="kchip a">إداري</span>');
+    const rows=[['المجال','البند','الشاهد وأين يوجد','جاهز']];
+    KIT.evidence.forEach(([d,items])=>items.forEach((it,i)=>rows.push([i?'':`<b>${d}</b>`,it[0],tag(it[1]),/📌/.test(it[1])&&!/🖥️|📁/.test(it[1])?'☐':'<b style="color:#047857">✔</b>'])));
+    return `<div class="khd"><div class="kt1">شواهد بنود تقييم الأداء الوظيفي</div><div class="kt2">${KIT.common.teacher} • ${KIT.common.subject} • ${KIT.common.school}</div></div>
+    <p><span class="kchip s">العرض</span> يتحقق داخل هذا العرض (زر 📑 ينقل للشريحة) • <span class="kchip f">الحقيبة</span> في حقيبة المعلمة 📁 داخل العرض • <span class="kchip a">إداري</span> تُرفق شواهده في ملف الإنجاز.</p>
+    ${ktab(rows,{head:true})}
+    <h3>✅ قائمة التحقق يوم الزيارة</h3><ul><li>فتح العرض على السبورة قبل الحصة والضغط على ملء الشاشة ⛶.</li><li>طباعة ورقة العمل بعدد الطالبات، ونسخة من خطة الدرس للمشرفة (من حقيبة المعلمة 📁 ← 🖨️).</li><li>تحديث كشف الحضور من زر 👩‍🎓 أول الحصة.</li><li>عرض لوحة بنود التقييم 📑 للمشرفة عند الطلب.</li><li>تطبيق القياس القصير ورصد النتائج في «سجل النتائج».</li><li>تصوير بعض لحظات التطبيق العملي لإرفاقها في ملف الإنجاز.</li></ul>`; }
+};
+
+function drawKit(){
+  $('#kitTabs').innerHTML=KT.map(([k,t])=>`<button class="ktb ${k===kitTab?'on':''}" data-k="${k}">${t}</button>`).join('');
+  $$('#kitTabs .ktb').forEach(b=>b.onclick=()=>{ kitTab=b.dataset.k; drawKit(); $('#kitDoc').scrollTop=0; });
+  $('#kitDoc').innerHTML='<div class="paper">'+KitDocs[kitTab]()+'</div>';
+  if(kitTab==='rec') $$('#kitDoc .kin').forEach(i=>i.addEventListener(i.type==='checkbox'?'change':'input',()=>{
+    const R=Store.get('record',{}), n=Roster.list[+i.dataset.n]; R[n]=R[n]||{}; R[n][i.dataset.f]=i.type==='checkbox'?i.checked:i.value; Store.set('record',R); }));
+}
+function openKit(tab){ if(tab) kitTab=tab; openOv('ovKit'); drawKit(); }
+function printKit(all){
+  const area=$('#printArea'); area.innerHTML=(all?KT.filter(([k])=>k!=='ev'&&k!=='rec').map(([k])=>KitDocs[k]()).join('<div class="pb"></div>'):KitDocs[kitTab]());
+  if(!all&&kitTab==='rec') $$('#kitDoc .kin').forEach((src,j)=>{ const dst=$$('#printArea .kin')[j]; if(dst){ if(src.type==='checkbox') dst.checked=src.checked; else dst.setAttribute('value',src.value); } });
+  document.body.classList.add('printing'); setTimeout(()=>{ window.print(); document.body.classList.remove('printing'); },50);
+}
+$('#btnKit').onclick=()=>openKit();
+$('#kitPrint').onclick=()=>printKit(false);
+$('#kitPrintAll').onclick=()=>printKit(true);
+
+/* ==================================================================
+   👆 الضغط في أي مكان فارغ من الشاشة = الانتقال للشريحة التالية
+   (لا يعمل على الأزرار والبطاقات والعناصر التفاعلية حتى لا يتعارض معها)
+   ================================================================== */
+const INTERACTIVE='button,a,input,textarea,select,label,[contenteditable],.flip,.idea,.bs-add,.step,.vote,.lc,.bt,.spot,.pg-spot,.branch,.task,.face-btn,.opt,.en,.tf,.smr,.wq,.ob,.piece,.phase,.eq-box,.hq,.timer,.sim,.word,.dlg,.wiz,.diff-wrap,.quiz,.dm,.w-drop,#bar,#keys,.overlay';
+stage.addEventListener('click',e=>{
+  if(anyOpen()) return;
+  if(e.target.closest(INTERACTIVE)) return;
+  const sel=window.getSelection&&String(window.getSelection()); if(sel) return;
+  next();
+});
+
+/* منع أي إزاحة للمسرح أو الشرائح عند التركيز على عنصر (ثبات الشاشة) */
+document.addEventListener('scroll',e=>{ const t=e.target; if(t&&t.nodeType===1&&(t.id==='stage'||t.classList.contains('slide'))){ t.scrollTop=0; t.scrollLeft=0; } },true);
+
+/* البدء: من رقم الشريحة في الرابط (#5)، أو من آخر شريحة كنتِ عليها */
+go(Math.max(0,(parseInt(location.hash.slice(1))||(Store.get('slide',0)+1))-1));
+updatePresence();
+showBar();
+</script>
+</body>
+</html>
