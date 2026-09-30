@@ -599,23 +599,6 @@ ul.cols{columns:2}
 .kin{font-family:inherit;font-size:1em;width:90px;text-align:center;border:2px solid #D8D2F0;border-radius:8px;padding:2px 6px}
 input[type=checkbox].kin{width:24px;height:24px}
 .pb{height:0}
-
-/* بطاقات المجموعات */
-.gcard .gtop{display:flex;justify-content:space-between;align-items:center;gap:16px;border:3px solid #6D28D9;border-radius:16px;padding:14px 20px;background:#F5F3FF;margin-bottom:6px}
-.gcard .gk{font-size:.9em;font-weight:800;color:#6D28D9}
-.gcard .gn{font-size:1.9em;font-weight:900;color:#2E1065;line-height:1.2}
-.gcard .gdev{font-size:1.2em;font-weight:900;color:#115E59;background:#D5F7F2;border-radius:12px;padding:8px 14px;text-align:center;display:flex;flex-direction:column}
-.gcard .gdev small{font-size:.55em;font-weight:700;color:#555;margin-top:2px}
-.gcard .gmis{border:1.5px dashed #BFB6E0;border-radius:12px;padding:8px 14px;font-weight:700;line-height:1.7}
-.gcard .gsteps td{padding:5px 10px}
-.gcard .gnum{width:44px;text-align:center;font-weight:900;color:#6D28D9;font-size:1.15em}
-.gcard .gpg{width:70px;text-align:center;color:#6D28D9;font-weight:800;white-space:nowrap}
-.gcard .gbox{width:50px}
-.gcard .ghint{font-size:.85em;color:#555;font-weight:600;margin-top:2px}
-.gcard h3{padding-top:10px!important}
-.gcard .gres{display:flex;gap:18px;flex-wrap:wrap;align-items:center;border:2px solid #6D28D9;border-radius:12px;padding:8px 14px;margin-top:10px;font-weight:700}
-@media print{ #printArea .gcard{font-size:11.5pt;line-height:1.45} #printArea .gcard .kt{margin:2px 0 4px} #printArea .gcard .kt td,#printArea .gcard .kt th{padding:3px 8px}
-  #printArea .gcard h3{padding-top:5px!important;padding-bottom:3px!important;font-size:11.5pt} #printArea .gcard .gmis{line-height:1.5;padding:5px 12px} #printArea .gcard .gtop{padding:8px 16px} #printArea .gcard .knote{margin:4px 0 0} }
 #printArea{display:none}
 @media print{
   @page{size:A4;margin:12mm}
@@ -793,12 +776,12 @@ const CONFIG = {
       { t:'توفّر الحقيبة التدريسية', files:['العرض التفاعلي','حقيبة المعلمة 📁'] } ]},
     { domain:'استراتيجيات التدريس', e:'🧩', items:[
       { t:'استخدام الاستراتيجيات المناسبة للدرس', tags:['التهيئة','التطبيق على المحاكي','تحدي المجموعات','ورقة العمل','خريطة المفاهيم'] },
-      { t:'إعداد أوراق العمل وفق الاستراتيجية', tags:['ورقة العمل'], files:['ورقة العمل (قياس قصير)'] },
+      { t:'إعداد أوراق العمل وفق الاستراتيجية', files:['ورقة العمل'] },
       { t:'الالتزام باستخدام اللغة العربية الفصحى', admin:'جميع نصوص العرض بالفصحى' } ]},
     { domain:'دعم التعلم', e:'💡', items:[
       { t:'استخدام التقنية الحديثة أداةً للتوضيح والتحفيز', tags:['التهيئة','التطبيق على المحاكي'] },
       { t:'استخدام ومتابعة كتاب الطالب', tags:['التطبيق على المحاكي','الختام'], admin:'خطوات المحاكي مربوطة بصفحات الكتاب ص ٦٨–٧٥' },
-      { t:'تشجيع الطلاب على الاستزادة من المعرفة (الإثراء)', tags:['نشاط إثرائي'], files:['بطاقة النشاط الإثرائي'] },
+      { t:'تشجيع الطلاب على الاستزادة من المعرفة (الإثراء)', files:['بطاقة النشاط الإثرائي'] },
       { t:'قدرة المعلم على غلق وإنهاء الدرس', tags:['خريطة المفاهيم','الختام'] } ]},
     { domain:'إدارة الصف', e:'🏫', items:[
       { t:'يضبط الصف ويديره بكفاءة', tags:['التحضير'], admin:'لوحة النقاط 🏆 والقرعة 🎲 وكشف الحضور 👩‍🎓' },
@@ -808,7 +791,7 @@ const CONFIG = {
     { domain:'دعم المتعلمين', e:'🤝', items:[
       { t:'تشجيع الطلاب على التعبير عن حاجاتهم وآرائهم', tags:['مراجعة الدرس السابق','ورقة العمل'] },
       { t:'استخدام التحفيز بأنواعه', tags:['تحدي المجموعات','الختام'], admin:'التصفيق 👏 والنجوم ⭐ ونقاط المجموعات 🏆' },
-      { t:'دعم ما تعلّمه الطلاب في الدرس في حياتهم', tags:['التهيئة','ورقة العمل'], admin:'موقف حفل النجاح + سؤال التفكير الإبداعي' } ]},
+      { t:'دعم ما تعلّمه الطلاب في الدرس في حياتهم', tags:['ورقة العمل'], admin:'سؤال التفكير الإبداعي في ورقة العمل' } ]},
     { domain:'التقويم', e:'📊', items:[
       { t:'استخدام أساليب متنوعة في التقويم', tags:['مراجعة الدرس السابق','تحدي المجموعات','ورقة العمل'] },
       { t:'الإسهام في بناء بنك الأسئلة لمادة التخصص', files:['بنك الأسئلة'] },
@@ -838,12 +821,12 @@ const CONFIG = {
     ],
     // نص الرسالة: ضعي اسم الحقل بين { } ليُستبدل ببيانات كل مستلمة
     template: [
-      'إلى صديقتي: {الاسم الأول} {اسم العائلة}',
+      'إلى: {الاسم الأول} {اسم العائلة}',
       'الصف: {الصف}',
       'مرحبًا 🌷',
-      'يسعدني دعوتكِ لحضور حفل نجاحي 🎓',
-      'يوم الخميس في تمام الساعة ٥ مساءً.',
-      'حضوركِ يكمّل فرحتي 💜'
+      'ندعوكِ لحضور اجتماعنا السنوي في المتحف الوطني للمملكة العربية السعودية.',
+      'يُقام الحدث يوم ١٣ محرم في تمام الساعة ٧ مساءً.',
+      'يسعدنا حضوركِ.'
     ]
   },
 
@@ -853,7 +836,7 @@ const CONFIG = {
     { type:'hero', transition:'zoom', tag:'ترحيب',
       emoji:'💻', title:'أهلًا بكنّ في حصة <span>المهارات الرقمية</span>',
       subtitle:'جاهزات لمغامرة رقمية جديدة؟ اليوم سنتعلّم سرًّا يوفّر ساعات من العمل! ✨',
-      button:'نعم ! 👏' },
+      button:'نعم جاهزات! 👏' },
     /* 2) التحضير */
     { type:'prep', transition:'slide', tag:'التحضير', strategy:'📋 التحضير',
       title:'التحضير <span class="hl">وميثاق الحصة</span>',
@@ -868,22 +851,9 @@ const CONFIG = {
         { q:'ما امتداد ملفات مايكروسوفت وورد؟',       a:'.docx 📄' }
       ],
       link:'تعلّمنا كيف ننشئ مستندًا واحدًا وننسّقه… لكن ماذا لو احتجنا أن نرسل <b>المستند نفسه</b> إلى <b>٣٠ شخصًا</b> وكلٌّ باسمه؟ 🤔 هذا ما سنكتشفه اليوم!' },
-    /* 4) التهيئة: ماذا تتوقعين؟ (موقف من حياة الطالبة) */
-    { type:'predict', transition:'slide', tag:'التهيئة', strategy:'🔮 ماذا تتوقعين؟',
-      title:'موقف <span class="hl">يخصّكِ!</span>',
-      who:'👧🏻',
-      scenario:'نجحتِ وتفوّقتِ 🎉 وقرّرتِ إقامة <b>حفل نجاح</b>، وتريدين دعوة <b>٣٠ صديقة</b> من صديقات المدرسة، وكل دعوة تحمل <b>اسم صديقتكِ وصفّها</b>… والحفل بعد يومين فقط! ⏰',
-      question:'صوّتي: كيف ستجهّزين الدعوات؟',
-      options:[
-        { e:'✍️', t:'أكتب ٣٠ دعوة منفصلة', s:'⏳ ساعات من الكتابة!' },
-        { e:'📋', t:'أنسخ الدعوة وأغيّر الاسم كل مرة', s:'😓 وقت طويل… وأخطاء في الأسماء' },
-        { e:'✨', t:'توجد طريقة ذكية؟!', s:'⚡ دقائق معدودة' }
-      ],
-      reveal:'✨ نعم! في وورد أداة تكتبين بها الدعوة مرة واحدة فتخرج باسم كل صديقة… هيا نكتشفها!' },
-
-    /* 5) التهيئة: لاحظ واكتشف (سحر الدمج) */
+    /* 4) التهيئة: لاحظ واكتشف */
     { type:'observe', transition:'fade', tag:'التهيئة', strategy:'🔍 لاحظي واكتشفي',
-      title:'دعوة واحدة… <span class="hl">وأسماء كثيرة!</span> ماذا لاحظتِ؟',
+      title:'شاهدي <span class="hl">السحر</span> ثم أخبريني: ماذا لاحظتِ؟',
       observations:['📄 نص الرسالة ثابت','🔄 الأسماء تتغيّر','📊 البيانات جاءت من جدول'] },
     /* 6) العنوان */
     { type:'title', transition:'zoom', tag:'عنوان الدرس' },
@@ -924,14 +894,14 @@ const CONFIG = {
       title:'هيا نطبّق على <span class="hl">وورد</span>', url:'word.html',
       note:'بعد الانتهاء أغلقي نافذة المحاكي (أو زر «↩ العودة للعرض») وأكملي من هنا ➜',
       steps:[
-        { t:'تبويب مراسلات ← بدء دمج المراسلات ← المعالج خطوة بخطوة', h:'تظهر لوحة «دمج المراسلات» على الجانب الأيسر.', p:'ص ٦٩' },
-        { t:'الخطوة ١: تحديد نوع المستند ← رسائل', h:'ثم اضغطن «التالي: مستند البداية».', p:'ص ٧٠' },
-        { t:'الخطوة ٢: استخدام المستند الحالي', h:'ثم اضغطن «التالي: تحديد المستلمين».', p:'ص ٧١' },
-        { t:'الخطوة ٣: كتابة قائمة جديدة ← إنشاء', h:'تظهر نافذة «قائمة عناوين جديدة».', p:'ص ٧٢' },
-        { t:'تخصيص أعمدة: حذف الحقول وإعادة تسمية المدينة إلى الصف', h:'أبقين: الاسم الأول، اسم العائلة، المدينة فقط ← حدّدن «المدينة» ← إعادة تسمية ← «الصف» ← موافق.', p:'ص ٧٣' },
-        { t:'إدخال المستلمات ← موافق ← حفظ القائمة في المستندات', h:'٣ زميلات على الأقل (إدخال جديد لكل واحدة) ← موافق ← احفظن في «المستندات» ← موافق.', p:'ص ٧٤' },
-        { t:'الخطوة ٤: إدراج الحقول في الرسالة', h:'انقرن بعد «إلى:» ← عناصر إضافية ← الاسم الأول ثم اسم العائلة، وبعد «الصف:» ← الصف.', p:'ص ٧٥' },
-        { t:'الخطوة ٥ و٦: معاينة الرسائل ← إتمام الدمج', h:'تنقّلن بين المستلمات بالسهم » ثم: التالي ← تحرير رسائل فردية ← الكل ← موافق.', p:'ص ٦٨' }
+        { t:'تبويب مراسلات ← بدء دمج المراسلات ← المعالج خطوة بخطوة', p:'ص ٦٩' },
+        { t:'الخطوة ١: تحديد نوع المستند ← رسائل', p:'ص ٧٠' },
+        { t:'الخطوة ٢: استخدام المستند الحالي', p:'ص ٧١' },
+        { t:'الخطوة ٣: كتابة قائمة جديدة ← إنشاء', p:'ص ٧٢' },
+        { t:'تخصيص أعمدة: حذف الحقول وإعادة تسمية المدينة إلى الصف', p:'ص ٧٣' },
+        { t:'إدخال المستلمات ← موافق ← حفظ القائمة في المستندات', p:'ص ٧٤' },
+        { t:'الخطوة ٤: إدراج الحقول في الرسالة', p:'ص ٧٥' },
+        { t:'الخطوة ٥ و٦: معاينة الرسائل ← إتمام الدمج', p:'ص ٦٨' }
       ] },
 
     /* 10) تحدي المجموعات على المحاكي */
@@ -942,24 +912,19 @@ const CONFIG = {
                 'احفظن القائمة في مجلد «المستندات».',
                 'أدرجن الحقول، عايِنّ الرسائل، ثم أتممن الدمج.' ],
       roles:[ {e:'🧭',t:'تفتح المعالج'}, {e:'🛠️',t:'تخصّص الأعمدة'}, {e:'⌨️',t:'تُدخل البيانات'}, {e:'👀',t:'تُدرج الحقول وتعاين'} ],
-      teams:[ {name:'المجموعة الأولى'}, {name:'المجموعة الثانية'}, {name:'المجموعة الثالثة'}, {name:'المجموعة الرابعة'} ] },   // احذفي مجموعة إذا كانت ثلاث فقط
+      teams:[ {name:'المجموعة الأولى', device:'💻 اللابتوب'}, {name:'المجموعة الثانية', device:'📱 الآيباد'} ] },
 
-    /* 12) ورقة العمل (قياس قصير) */
-    { type:'wsSlide', transition:'slide', tag:'ورقة العمل', strategy:'📝 ورقة العمل: قياس قصير (فردي)',
-      title:'ورقة العمل: <span class="hl">قياس قصير</span>', seconds:420,
+    /* 11) ورقة العمل */
+    { type:'wsSlide', transition:'slide', tag:'ورقة العمل', strategy:'📝 ورقة العمل (فردي – فكّري زاوجي شاركي)',
+      title:'ورقة <span class="hl">العمل</span>', seconds:360,
       items:[
-        { t:'دمج المراسلات يدمج المستند مع…', a:'ملف قاعدة بيانات' },
-        { t:'عدد خطوات إنشاء مستندات دمج المراسلات:', a:'٦ خطوات' },
-        { t:'نبدأ دمج المراسلات من تبويب:', a:'مراسلات' },
-        { t:'نضيف معلومات المستلمين في الخطوة:', a:'الثالثة' },
-        { t:'الخطوة الأخيرة في المعالج:', a:'إتمام الدمج' },
-        { t:'معالج دمج المراسلات يوجّه المستخدم خطوة بخطوة.', a:'✓ صح' },
-        { t:'يجب إنشاء مستند منفصل لكل مستلم.', a:'✗ خطأ' },
-        { t:'يمكن إعادة تسمية حقل «المدينة» إلى «الصف».', a:'✓ صح' },
-        { t:'تُحفظ قائمة العناوين دون ظهور نافذة حفظ.', a:'✗ خطأ' },
-        { t:'كتابة الرسالة تسبق تحديد المستلمين.', a:'✗ خطأ' }
-      ],
-      bonus:'⭐ سؤال إبداعي: اقترحي موقفًا من حياتكِ تستخدمين فيه دمج المراسلات، واذكري الحقول التي تحتاجينها.' },
+        { t:'رتّبي خطوات دمج المراسلات الست بالترتيب الصحيح.',
+          a:'تحديد نوع المستند ← تحديد مستند البداية ← تحديد المستلمين ← كتابة الرسالة ← معاينة الرسائل ← إتمام الدمج' },
+        { t:'فكّري – زاوجي – شاركي: لماذا يُفضَّل استخدام معالج دمج المراسلات؟',
+          a:'لأنه يوجّهنا خطوة بخطوة لإكمال الدمج بسهولة، ويقلل الأخطاء، ويوفّر الوقت والجهد.' },
+        { t:'💡 تفكير إبداعي: اقترحي موقفًا من حياتكِ تستخدمين فيه دمج المراسلات، واذكري الحقول التي تحتاجينها.',
+          a:'مثال: بطاقات شكر لصديقاتي بعد حفلتي، بالحقول: الاسم الأول، اسم العائلة، الهدية.' }
+      ] },
 
     /* 12) الغلق: خريطة مفاهيم الدرس */
     { type:'summary', transition:'fade', tag:'خريطة المفاهيم', strategy:'🗺️ خريطة المفاهيم',
@@ -971,22 +936,6 @@ const CONFIG = {
         { e:'🪜', t:'الخطوات الست',      d:'نوع المستند ← مستند البداية ← المستلمين ← كتابة الرسالة ← المعاينة ← إتمام الدمج.' },
         { e:'🗂️', t:'قائمة المستلمين',   d:'كتابة قائمة جديدة ← تخصيص أعمدة (حذف / إعادة تسمية / إضافة) ← إدخال جديد ← حفظ.' }
       ] },
-
-    /* 14) نشاط إثرائي (بعد خريطة المفاهيم) */
-    { type:'enrich', transition:'zoom', tag:'نشاط إثرائي', strategy:'🌟 نشاط إثرائي',
-      title:'تحدّيات <span class="hl">للمبدعات في الدمج</span>', badge:'🚀 للمتميزات',
-      cards:[
-        { level:1, e:'🏅', t:'شهادات تقدير بالدمج',
-          d:'صمّمي شهادة تقدير واحدة، وادمجيها لتخرج باسم كل طالبة.',
-          steps:['صمّمي الشهادة في وورد مع حد صفحة جميل.','ابدئي المعالج واختاري «رسائل».','اكتبي قائمة بـ ٥ طالبات (الاسم، المادة، التقدير).','أدرجي الحقول في الشهادة ثم عايني وأتمّي الدمج.'] },
-        { level:2, e:'📊', t:'من إكسل إلى وورد',
-          d:'بدلًا من كتابة القائمة يدويًا، استخدمي جدول بيانات جاهزًا.',
-          steps:['أنشئي جدولًا في Excel: الاسم الأول، اسم العائلة، الصف.','احفظي الملف.','في الخطوة ٣ اختاري «استخدام قائمة موجودة» ← استعراض.','حدّدي ملف Excel وأكملي الدمج.'] },
-        { level:3, e:'🧠', t:'رسالة ذكية بقاعدة «إذا… عندئذ»',
-          d:'اجعلي الرسالة تكتب «عزيزتي» أو «عزيزي» تلقائيًا حسب المستلم.',
-          steps:['أضيفي حقلًا جديدًا باسم «الجنس» في قائمة العناوين.','من تبويب مراسلات ← قواعد ← If…Then…Else.','إذا كان الجنس = أنثى اكتبي «عزيزتي»، وإلا «عزيزي».','عايني الرسائل وتأكدي من النتيجة.'] }
-      ],
-      note:'💡 هل تعلمين؟ يمكن إرسال الرسائل المدموجة مباشرة بالبريد الإلكتروني باختيار «رسائل البريد الإلكتروني» في الخطوة الأولى.' },
 
     /* 24) الختام */
     { type:'closing', transition:'zoom', tag:'الختام',
@@ -1021,10 +970,10 @@ const KIT = {
   ],
   "strategies": [
    "استراتيجية الأسئلة (مراجعة الدرس السابق)",
-   "ماذا تتوقعين؟ + لاحظ واكتشف (التهيئة)",
+   "لاحظ واكتشف (التهيئة)",
    "النمذجة والتطبيق العملي على محاكي وورد",
    "التعلّم التعاوني والتنافسي (تحدي المجموعات)",
-   "التقويم الفردي (ورقة العمل: قياس قصير)",
+   "فكّر – زاوج – شارك (ورقة العمل)",
    "خريطة المفاهيم (الغلق)"
   ],
   "procedures": [
@@ -1033,55 +982,55 @@ const KIT = {
     "١ – ٣",
     "تسجيل الحضور، الميثاق، بطاقات أسئلة عن التنسيق المتقدم ثم الربط بدرس اليوم.",
     "الأسئلة + القرعة",
-    "٣ د"
-   ],
-   [
-    "التهيئة",
-    "٤ – ٥",
-    "موقف «حفل النجاح»: ٣٠ دعوة كلٌّ باسمها مع تصويت الطالبات، ثم عرض سحر الدمج بأسمائهن واستنتاج الملاحظات.",
-    "ماذا تتوقعين؟ + لاحظ واكتشف",
     "٤ د"
    ],
    [
+    "التهيئة",
+    "٤",
+    "عرض «سحر الدمج» بأسماء الطالبات واستنتاج الملاحظات.",
+    "لاحظ واكتشف",
+    "٣ د"
+   ],
+   [
     "العنوان والأهداف",
-    "٦ – ٧",
+    "٥ – ٦",
     "عرض العنوان وظهور الأهداف تلقائيًا.",
     "—",
     "٢ د"
    ],
    [
     "المفهوم والخطوات الست",
-    "٨ – ٩",
+    "٧ – ٨",
     "معادلة الدمج (مستند + قاعدة بيانات = رسائل مخصّصة) ثم الخطوات الست.",
     "الاكتشاف الموجّه",
     "٥ د"
    ],
    [
     "الشرح والتطبيق على المحاكي",
-    "١٠",
+    "٩",
     "نمذجة الخطوات على محاكي وورد مع مشاركة طالبات على السبورة، وربط كل خطوة بصفحتها في الكتاب.",
     "النمذجة والتطبيق العملي",
     "١٠ د"
    ],
    [
     "تحدي المجموعات",
-    "١١",
+    "١٠",
     "مجموعتان (لابتوب وآيباد) تنفذان مهمة الدمج كاملة على المحاكي بأدوار محددة، ورصد النقاط وإعلان الفائزة.",
     "التعلّم التعاوني والتنافسي",
     "١٠ د"
    ],
    [
-    "ورقة العمل (قياس قصير)",
-    "١٢",
-    "حل ورقة العمل فرديًا: ٥ أسئلة اختيار من متعدد + ٥ صح أو خطأ + سؤال إبداعي مرتبط بالحياة، ثم عرض الإجابات والتصحيح.",
-    "التقويم الفردي",
+    "ورقة العمل",
+    "١١",
+    "ترتيب الخطوات، فكّري–زاوجي–شاركي، وسؤال تفكير إبداعي مرتبط بالحياة، ثم عرض الإجابات.",
+    "فكّر – زاوج – شارك",
     "٧ د"
    ],
    [
-    "الغلق والإثراء",
-    "١٣ – ١٥",
-    "خريطة مفاهيم الدرس، ثم النشاط الإثرائي (تحديات بثلاثة مستويات للمتميزات)، ثم الواجب والتحفيز.",
-    "خريطة المفاهيم + الإثراء",
+    "الغلق",
+    "١٢ – ١٣",
+    "خريطة مفاهيم الدرس، ثم الواجب والتحفيز.",
+    "خريطة المفاهيم",
     "٤ د"
    ]
   ],
@@ -1327,16 +1276,15 @@ const KIT = {
    "العرض التفاعلي على السبورة الذكية.",
    "محاكي وورد (word.html) على السبورة للنمذجة، وعلى اللابتوب والآيباد لتحدي المجموعات.",
    "كتاب الطالبة ص ٦٨ – ٧٧.",
-   "ورقة العمل (قياس قصير)، وبطاقة تحدي المجموعات، والمؤقتات، ولوحة نقاط المجموعات."
+   "ورقة العمل، والمؤقتات، ولوحة نقاط المجموعات (داخل العرض)."
   ],
   "evaluation": [
    "تكويني: أسئلة المراجعة بالقرعة، وملاحظة أداء الطالبات على المحاكي.",
    "أدائي: نقاط تحدي المجموعات (الخطوات المكتملة من ١١ والوقت).",
-   "ورقة العمل = قياس قصير من ١٠ درجات (اختيار من متعدد + صح أو خطأ) وسؤال إبداعي إضافي، وتُرصد في سجل النتائج.",
-   "ختامي: خريطة مفاهيم الدرس."
+   "ورقة العمل: ترتيب الخطوات + فكّري–زاوجي–شاركي + سؤال تفكير إبداعي.",
+   "ختامي: خريطة المفاهيم، ويمكن تطبيق القياس القصير الورقي (في الحقيبة) في الحصة التالية."
   ],
-  "note": "النشاط الإثرائي يُعرض بعد خريطة المفاهيم (ش ١٤) ويُنفَّذ في المنزل أو لمن تنهي مبكرًا، وبنك الأسئلة متوفر في الحقيبة.",
-  "bonus": "اقترحي موقفًا من حياتكِ تستخدمين فيه دمج المراسلات، واذكري الحقول التي تحتاجينها."
+  "note": "بنك الأسئلة والقياس القصير والنشاط الإثرائي متوفرة في الحقيبة للاستخدام حسب الوقت أو في حصة لاحقة."
  },
  "evidence": [
   [
@@ -1761,32 +1709,28 @@ const Render = {
         <div class="note a" style="--i:5;font-size:24px">⭐ النقاط: ١٠ لكل خطوة صحيحة + مكافأة سرعة لمن تُنهي الدمج كاملًا. افتحن الرابط على كل جهاز: <b dir="ltr">${d.url}</b></div>
       </div>
       <div class="col a" style="--i:3;width:600px;gap:16px">
-        <div class="card col" style="align-items:center;gap:10px;padding:16px">${timerHTML(d.seconds)}
+        <div class="card col" style="align-items:center;gap:12px;padding:22px">${timerHTML(d.seconds)}
           <button class="btn sm" data-open="${d.url}">🖥️ افتحي التحدي على هذا الجهاز</button></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${d.teams.map((t,i)=>`<div class="card gteam" style="padding:12px 16px;display:flex;flex-direction:column;align-items:center;gap:8px">
-          <input class="gname" value="${t.name}" style="font-size:24px;font-weight:900;border:none;border-bottom:2px dashed var(--pl);outline:none;color:var(--ink);background:none;width:100%;text-align:center">
-          <input class="gscore" type="number" min="0" placeholder="النقاط" style="width:150px;font-size:32px;font-weight:900;text-align:center;border:3px solid var(--pl);border-radius:14px;color:var(--p)"></div>`).join('')}</div>
+        ${d.teams.map((t,i)=>`<div class="card gteam" style="padding:18px 24px;display:flex;align-items:center;gap:16px">
+          <div class="col grow" style="gap:4px"><input class="gname" value="${t.name}" style="font-size:28px;font-weight:900;border:none;border-bottom:2px dashed var(--pl);outline:none;color:var(--ink);background:none;width:100%">
+          <span style="font-size:22px;color:var(--muted);font-weight:700">${t.device}</span></div>
+          <div class="col" style="align-items:center"><input class="gscore" type="number" min="0" placeholder="٠" style="width:130px;font-size:40px;font-weight:900;text-align:center;border:3px solid var(--pl);border-radius:16px;color:var(--p)"><span style="font-size:18px;color:var(--muted)">النقاط</span></div></div>`).join('')}
         <button class="btn gold" data-g="win">🏆 أعلني المجموعة الفائزة</button>
         <div class="big-reveal reveal gwin" style="font-size:34px;padding:18px"></div>
       </div>
     </div>`,
 
   /* ورقة العمل على الشاشة */
-  wsSlide:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:18px">${d.title}</h2>
-    <div class="row" style="flex:1;min-height:0;align-items:flex-start;gap:26px">
-      <div class="col grow" style="gap:10px">
-        <div class="a" style="--i:2;display:grid;grid-template-columns:1fr 1fr;gap:10px">${d.items.map((q,i)=>`<div class="card" style="padding:12px 18px;display:flex;gap:12px;align-items:flex-start">
-          <span style="width:40px;height:40px;flex:none;border-radius:12px;background:${i<5?'var(--pl)':'var(--mintl)'};color:${i<5?'var(--p)':'#115E59'};font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:center">${ar(i+1)}</span>
-          <div class="col" style="gap:4px"><div style="font-size:23px;font-weight:800;color:var(--ink);line-height:1.4">${q.t}</div><div class="ans reveal" style="font-size:21px;font-weight:800;color:#047857;background:var(--okl);border-radius:10px;padding:3px 12px;align-self:flex-start">${q.a}</div></div></div>`).join('')}</div>
-        ${d.bonus?`<div class="note a" style="--i:3;font-size:24px">${d.bonus}</div>`:''}
-        <div class="a" style="--i:4;font-size:20px;color:var(--muted);font-weight:700">١–٥ اختيار من متعدد • ٦–١٠ صح أو خطأ • الدرجة من ١٠</div>
-      </div>
-      <div class="card col a" style="--i:3;width:400px;align-items:center;gap:14px;padding:22px">
+  wsSlide:d=>`${chip(d)}<h2 class="h a" style="--i:1;margin-bottom:22px">${d.title}</h2>
+    <div class="row" style="flex:1;min-height:0;align-items:flex-start;gap:30px">
+      <div class="col grow" style="gap:18px">${d.items.map((q,i)=>`<div class="card a" style="--i:${2+i};padding:22px 28px">
+        <div style="display:flex;gap:18px;align-items:flex-start"><span style="width:58px;height:58px;flex:none;border-radius:18px;background:var(--pl);color:var(--p);font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center">${ar(i+1)}</span>
+        <div class="col" style="gap:10px"><div style="font-size:30px;font-weight:800;color:var(--ink);line-height:1.5">${q.t}</div><div class="ans reveal" style="font-size:24px;font-weight:700;color:#047857;background:var(--okl);border-radius:14px;padding:10px 16px">✅ ${q.a}</div></div></div></div>`).join('')}</div>
+      <div class="card col a" style="--i:3;width:440px;align-items:center;gap:14px;padding:24px">
         <div style="font-size:28px;font-weight:900;color:var(--ink)">⏳ وقت الحل</div>${timerHTML(d.seconds)}
         <button class="btn sm" data-act="wsprint">📄 ورقة العمل للطباعة</button>
         <button class="btn sm mint" data-act="wsans">✅ أظهري الإجابات</button>
-        <button class="btn sm gold" data-act="pick">🎲 من تجيب؟</button>
-        <button class="btn sm soft" data-act="roster2">📈 رصد الدرجات</button></div>
+        <button class="btn sm gold" data-act="pick">🎲 من تجيب؟</button></div>
     </div>`,
 
   /* أسئلة مهارات التفكير العليا */
@@ -1876,7 +1820,7 @@ const Render = {
       <div class="col a" style="--i:2;width:560px;gap:14px"><div style="font-size:30px;font-weight:900;color:var(--ink)">📄 رسالة واحدة</div>${fillLetter(null,M.fields)}</div>
       <div class="col a" style="--i:3;width:520px;gap:14px"><div style="font-size:30px;font-weight:900;color:var(--ink)">📊 جدول بيانات</div>
         <table class="dtable"></table>
-        <button class="btn big" data-act="magic" style="margin-top:14px">✨ شاهدي الإبداع</button></div>
+        <button class="btn big" data-act="magic" style="margin-top:14px">✨ شاهدي السحر</button></div>
       <div class="col grow a" style="--i:4;gap:14px"><div style="font-size:30px;font-weight:900;color:var(--ink)">💌 النتيجة</div><div class="stack"></div></div>
     </div>
     <div class="obs a" style="--i:5;margin-top:10px">${d.observations.map(o=>`<button class="ob" data-o="${o}">❓ ماذا لاحظتِ؟</button>`).join('')}</div>`;
@@ -2064,9 +2008,8 @@ const Init = {
 
   /* ورقة العمل */
   wsSlide(el){ makeTimer(el,+el.dataset.idx);
-    $('[data-act=wsans]',el).onclick=()=>{ $$('.ans',el).forEach((a,i)=>setTimeout(()=>a.classList.add('shown'),i*250)); Sound.success(); };
-    $('[data-act=wsprint]',el).onclick=()=>openKit('quizp');
-    $('[data-act=roster2]',el).onclick=()=>openKit('rec'); },
+    $('[data-act=wsans]',el).onclick=()=>{ $$('.ans',el).forEach((a,i)=>setTimeout(()=>a.classList.add('shown'),i*400)); Sound.success(); };
+    $('[data-act=wsprint]',el).onclick=()=>openKit('ws'); },
 
   /* أسئلة التفكير العليا */
   hots(el){ $$('.hq',el).forEach(q=>$('[data-h=ans]',q).onclick=()=>{ $('.ans',q).classList.toggle('shown'); Sound.success(); }); },
@@ -2490,7 +2433,7 @@ function drawEval(){
   const find=t=>CONFIG.slides.map((s,i)=>[s,i]).filter(([s])=>s.tag===t||(s.tag||'').startsWith(t+' '));
   $('#evalBody').innerHTML=CONFIG.evalMap.map(dm=>`<div class="ev-dom"><h4>${dm.e} ${dm.domain}</h4>${dm.items.map(it=>{
     const chips=(it.tags||[]).flatMap(t=>find(t)).map(([s,i])=>`<button class="ev-chip" data-go="${i}">🖥️ ${ar(i+1)} • ${s.tag}</button>`).join('');
-    const kmap=f=>/ورقة/.test(f)?'quizp':/بنك/.test(f)?'bank':/القياس/.test(f)?'quizp':/الإثرائي/.test(f)?'enrich':'plan';
+    const kmap=f=>/ورقة/.test(f)?'ws':/بنك/.test(f)?'bank':/القياس/.test(f)?'quizp':/الإثرائي/.test(f)?'enrich':'plan';
     const files=(it.files||[]).map(f=>`<button class="ev-chip file" data-kit="${kmap(f)}">📁 ${f}</button>`).join('')+(/شواهد/.test(it.admin||'')?`<button class="ev-chip file" data-kit="ev">📁 شواهد التقييم</button>`:'');
     const adm=it.admin?`<span class="ev-chip adm">👩‍🏫 ${it.admin}</span>`:'';
     return `<div class="ev-it"><span class="ok">${it.admin&&!chips&&!files?'📌':'✅'}</span><span class="nm">${it.t}</span>${chips}${files}${adm}</div>`; }).join('')}</div>`).join('');
@@ -2505,14 +2448,13 @@ $('#btnEval').onclick=()=>{ openOv('ovEval'); drawEval(); };
    القياس القصير، سجل النتائج، النشاط الإثرائي، شواهد التقييم
    — كل تبويب قابل للطباعة مباشرة من زر 🖨️
    ================================================================== */
-const KT = [['plan','📋 خطة الدرس'],['quizp','📝 ورقة العمل (قياس قصير)'],['cards','🏆 بطاقة المجموعة'],['bank','🗂️ بنك الأسئلة'],['rec','📈 سجل النتائج'],['enrich','🌟 النشاط الإثرائي'],['ev','📑 شواهد التقييم']];
+const KT = [['plan','📋 خطة الدرس'],['ws','📝 ورقة العمل'],['bank','🗂️ بنك الأسئلة'],['quizp','📊 القياس القصير'],['rec','📈 سجل النتائج'],['enrich','🌟 النشاط الإثرائي'],['ev','📑 شواهد التقييم']];
 let kitTab='plan';
 const LT=['أ','ب','ج','د'];
 function hijriToday(){ try{ return new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura',{day:'numeric',month:'long',year:'numeric'}).format(new Date()); }catch(e){ return '..../..../١٤٤٨ هـ'; } }
 function ktab(rows,o={}){ return `<table class="kt">${rows.map((r,i)=>`<tr>${r.map(c=>{ const h=o.head&&i===0; return `<${h?'th':'td'}${typeof c==='object'&&c&&c.cls?` class="${c.cls}"`:''}>${typeof c==='object'&&c?c.t:c}</${h?'th':'td'}>`; }).join('')}</tr>`).join('')}</table>`; }
 const kLine=()=>`<div class="kline"></div>`;
 const lname=()=>KIT.lesson.lesson.split(': ')[1];
-const esc2=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function kitHead(title){ const C=KIT.common, L=KIT.lesson;
   return `<div class="khd"><div class="kt1">${title}</div><div class="kt2">${L.lesson} • ${L.unit}</div></div>
   ${ktab([[{t:'المادة',cls:'lb'},C.subject,{t:'الصف',cls:'lb'},C.grade],[{t:'المعلمة',cls:'lb'},C.teacher,{t:'المدرسة',cls:'lb'},C.school],[{t:'الفصل',cls:'lb'},clsName(),{t:'التاريخ',cls:'lb'},hijriToday()]])}`; }
@@ -2556,11 +2498,10 @@ const KitDocs={
     <h3>الأسئلة المقالية ومهارات التفكير العليا</h3>${ktab([...L.essay.map((e,i)=>[ar(i+1),e[1]]),...L.hots.map(q=>[q[0],q[2]])])}`; },
 
   quizp(){ const L=KIT.lesson;
-    return `<div class="khd"><div class="kt1">ورقة العمل (قياس قصير) – ${lname()}</div></div>
+    return `<div class="khd"><div class="kt1">قياس قصير – ${lname()}</div></div>
     ${ktab([[{t:'الاسم',cls:'lb'},'',{t:'الفصل',cls:'lb'},clsName(),{t:'الدرجة',cls:'lb'},'  / ١٠']])}
     <h3>السؤال الأول: اختاري الإجابة الصحيحة (٥ درجات)</h3>${L.quizMcq.map((qi,i)=>{ const q=L.mcq[qi]; return `<p class="kq">${ar(i+1)}) ${q[0]}</p>${ktab([q[1].map((o,k)=>`${LT[k]}) ${o}`)])}`; }).join('')}
     <h3>السؤال الثاني: ضعي (✓) أو (✗) (٥ درجات)</h3>${ktab([['م','العبارة','✓ / ✗'],...L.quizTf.map((ti,i)=>[ar(i+1),L.tf[ti][0],''])],{head:true})}
-    ${L.bonus?`<h3>⭐ سؤال إبداعي (بدون درجة): ${L.bonus}</h3><div class="kline"></div><div class="kline"></div>`:''}
     <p style="text-align:center;font-weight:800;color:#6D28D9">انتهت الأسئلة… بالتوفيق 💜</p>
     <div class="pb"></div><h3>نموذج الإجابة (للمعلمة)</h3>${ktab([['السؤال الأول','السؤال الثاني'],...[0,1,2,3,4].map(i=>{ const q=L.mcq[L.quizMcq[i]], t=L.tf[L.quizTf[i]]; return [`${ar(i+1)}) ${LT[q[2]]} – ${q[1][q[2]]}`,`${ar(i+1)}) ${t[1]?'✓':'✗'}`]; })],{head:true})}`; },
 
@@ -2584,24 +2525,6 @@ const KitDocs={
     <p>اختاري تحديًا واحدًا على الأقل، ونفّذيه على جهازكِ، ثم احفظي الملف باسمكِ وسلّميه للمعلمة.</p>
     ${ktab([['المستوى','التحدي','المطلوب','أنجزته ✔'],...L.enrich.map((e,i)=>['⭐'.repeat(i+1),`<b>${e[0]}</b>`,e[1],''])],{head:true})}
     <h3>ماذا أضاف لي هذا التحدي؟</h3>${kLine()}${kLine()}`; },
-
-
-  /* بطاقة كل مجموعة للتحدي (صفحة A4 لكل مجموعة) */
-  cards(){ const G=CONFIG.slides.find(x=>x.type==='groupChallenge'), S=CONFIG.slides.find(x=>x.type==='launch'); if(!G||!S) return '<p>—</p>';
-    const st=Store.get('gchal',{});
-    return [G.teams[0]].map((t,gi)=>`${gi?'<div class="pb"></div>':''}
-    <div class="gcard">
-      <div class="gtop"><div><div class="gk">🏆 تحدي دمج المراسلات</div><div class="gn">المجموعة: ................................</div></div>
-        <div class="gdev">${KIT.lesson.lesson}<small>الفصل: ${clsName()}</small></div></div>
-      <h3>👭 أعضاء المجموعة وأدوارهن</h3>
-      ${ktab([['م','الدور','اسم الطالبة'],...G.roles.map((r,i)=>[ar(i+1),`${r.e} ${r.t}`,'']),[ar(G.roles.length+1),'⭐ القائدة (تنظّم الوقت)','']],{head:true})}
-      <h3>🎯 المهمة</h3><div class="gmis">${G.mission.map((m,i)=>`<div>${ar(i+1)}. ${m}</div>`).join('')}</div>
-      <h3>🧭 خطوات الحل بالترتيب (علّمن ✔ عند إنجاز كل خطوة)</h3>
-      <table class="kt gsteps"><tr><th>م</th><th>الخطوة</th><th>الكتاب</th><th>✔</th></tr>
-        ${S.steps.map((x,i)=>`<tr><td class="gnum">${ar(i+1)}</td><td><b>${x.t}</b>${x.h?`<div class="ghint">💡 ${x.h}</div>`:''}</td><td class="gpg">${x.p}</td><td class="gbox"></td></tr>`).join('')}</table>
-      <div class="gres"><b>📊 النتيجة (من شاشة المحاكي):</b><span>الخطوات: ...... / ١١</span><span>الوقت: ...... د</span><span>النقاط: ......</span></div>
-      <p class="knote" style="text-align:center">افتحن المحاكي على الرابط: <b dir="ltr">${G.url}</b> • بالتوفيق يا بطلات 💜</p>
-    </div>`).join(''); },
 
   ev(){ const tag=t=>t.replace(/🖥️/g,'<span class="kchip s">العرض</span>').replace(/📁/g,'<span class="kchip f">الحقيبة</span>').replace(/📌/g,'<span class="kchip a">إداري</span>');
     const rows=[['المجال','البند','الشاهد وأين يوجد','جاهز']];
